@@ -77,3 +77,35 @@ def test_tooltips_present_in_key_templates():
     for file_path in files:
         text = open(file_path, "r", encoding="utf-8").read()
         assert "data-tooltip" in text
+
+
+def test_dashboard_incomplete_totals_show_dashes_and_warning(db_session):
+    asset = InstrumentService(db_session).create_asset(AssetCreate(display_name="Fund A", asset_type=AssetType.FUND, asset_mode=AssetMode.OWNED, quote_currency="EUR"))
+    LotService(db_session).create_lot(LotCreate(asset_id=asset.id, quantity="10", buy_price="200.446", buy_currency="EUR", buy_date="2024-01-01"))
+
+    service = DashboardService(db_session)
+    query = {"q": "", "sort": "asset_name", "dir": "asc", "asset_type": "", "currency": "", "outlook": "", "action": "", "freshness": "", "source": "", "incomplete_only": "0"}
+    rows = service.query_owned_rows(query)
+    html = _render("dashboard.html", rows=rows, summary=service.summary_cards(), message=None, message_level="notice", **_ui_context(service.owned_rows(), query))
+
+    assert "Totals incomplete · 1 assets excluded" in html
+    assert "<h3>Total current value" in html and "<p>—</p>" in html
+    assert "<h3>Total unrealized P/L €" in html and "<p>—</p>" in html
+    assert "<h3>Total unrealized P/L %" in html and "<p>—</p>" in html
+
+
+def test_dashboard_money_and_quantity_formatting(db_session):
+    asset = InstrumentService(db_session).create_asset(AssetCreate(display_name="Alpha", asset_type=AssetType.STOCK, asset_mode=AssetMode.OWNED, quote_currency="EUR"))
+    LotService(db_session).create_lot(LotCreate(asset_id=asset.id, quantity="10", buy_price="200.446", buy_currency="EUR", buy_date="2024-01-01"))
+    db_session.add(MarketQuote(asset_id=asset.id, provider_name="seed", price=Decimal("201.1234"), quote_currency="EUR", provider_timestamp_utc=datetime.utcnow(), freshness_status="fresh", interval_type="spot", is_backfill=False))
+    db_session.commit()
+
+    service = DashboardService(db_session)
+    query = {"q": "", "sort": "asset_name", "dir": "asc", "asset_type": "", "currency": "", "outlook": "", "action": "", "freshness": "", "source": "", "incomplete_only": "0"}
+    rows = service.query_owned_rows(query)
+    html = _render("dashboard.html", rows=rows, summary=service.summary_cards(), message=None, message_level="notice", **_ui_context(service.owned_rows(), query))
+
+    assert "<p>2004.46</p>" in html
+    assert ">10<" in html
+    assert "2011.23" in html
+    assert "6.77" in html
