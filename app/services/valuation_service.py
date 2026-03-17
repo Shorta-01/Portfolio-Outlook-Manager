@@ -28,12 +28,16 @@ MARKET_PRICED_TYPES = {
 @dataclass
 class ValuationResult:
     current_price_quote_currency: Decimal | None
-    value_now_quote_currency: Decimal
-    value_now_base_currency: Decimal
-    unrealized_pl_amount: Decimal
-    unrealized_pl_percent: Decimal | None
+    value_now_quote_currency: Decimal | None
+    value_now_base_currency: Decimal | None
+    unrealized_pl_amount_base: Decimal | None
+    unrealized_pl_percent_base: Decimal | None
+    has_quote: bool
+    has_base_value: bool
+    fx_status: str
     source_label: str
     freshness_status: str
+    valuation_warning: str | None
 
 
 class ValuationService:
@@ -65,45 +69,66 @@ class ValuationService:
             current_price=valuation.current_price_quote_currency,
             value_now=valuation.value_now_base_currency,
             value_now_quote_currency=valuation.value_now_quote_currency,
-            unrealized_pl_amount=valuation.unrealized_pl_amount,
-            unrealized_pl_percent=valuation.unrealized_pl_percent,
+            unrealized_pl_amount=valuation.unrealized_pl_amount_base,
+            unrealized_pl_percent=valuation.unrealized_pl_percent_base,
+            has_quote=valuation.has_quote,
+            has_base_value=valuation.has_base_value,
+            fx_status=valuation.fx_status,
             freshness_status=valuation.freshness_status,
             source_label=valuation.source_label,
+            valuation_warning=valuation.valuation_warning,
         )
 
     def value_for_asset(self, asset: Asset, total_quantity: Decimal, invested_value: Decimal, base_currency: str) -> ValuationResult:
         if asset.asset_mode == AssetMode.CASH or asset.asset_type == AssetType.CASH:
             amount = asset.current_amount or Decimal("0")
             pl_amount = Decimal("0")
-            return ValuationResult(amount, amount, amount, pl_amount, Decimal("0"), "Manual", "manual")
+            return ValuationResult(amount, amount, amount, pl_amount, Decimal("0"), True, True, "not_applicable", "Manual", "manual", None)
 
         if asset.asset_mode == AssetMode.TERM_DEPOSIT or asset.asset_type == AssetType.TERM_DEPOSIT:
             principal = asset.principal_amount or Decimal("0")
             accrued = self._accrued_term_deposit_value(asset)
             pl = accrued - principal
             pl_pct = (pl / principal * Decimal("100")) if principal > 0 else None
-            return ValuationResult(None, accrued, accrued, pl, pl_pct, "Contract", "contract")
+            return ValuationResult(None, accrued, accrued, pl, pl_pct, True, True, "not_applicable", "Contract", "contract", None)
 
         if asset.asset_type in MARKET_PRICED_TYPES:
             quote = self.quote_repo.latest_for_asset(asset.id)
             if quote is None:
-                return ValuationResult(None, Decimal("0"), Decimal("0"), -invested_value, None, "Unknown", "unknown")
+                return ValuationResult(None, None, None, None, None, False, False, "not_applicable", "Unknown", "unknown", "Quote unavailable")
             value_quote = total_quantity * quote.price
-            converted = self.fx_service.convert(value_quote, quote.quote_currency, base_currency)
-            value_base = converted if converted is not None else Decimal("0")
-            pl = value_base - invested_value
+            converted = self.fx_service.convert(value_quote, quote.quote_currency.upper(), base_currency.upper())
+            if converted is None:
+                return ValuationResult(
+                    quote.price,
+                    value_quote,
+                    None,
+                    None,
+                    None,
+                    True,
+                    False,
+                    "missing",
+                    quote.provider_name,
+                    self._freshness_from_timestamp(quote.provider_timestamp_utc),
+                    "FX conversion unavailable",
+                )
+            pl = converted - invested_value
             pl_pct = (pl / invested_value * Decimal("100")) if invested_value > 0 else None
             return ValuationResult(
                 quote.price,
                 value_quote,
-                value_base,
+                converted,
                 pl,
                 pl_pct,
+                True,
+                True,
+                "not_applicable" if quote.quote_currency.upper() == base_currency.upper() else "applied",
                 quote.provider_name,
                 self._freshness_from_timestamp(quote.provider_timestamp_utc),
+                None,
             )
 
-        return ValuationResult(None, Decimal("0"), Decimal("0"), Decimal("0"), None, "Unknown", "unknown")
+        return ValuationResult(None, None, None, None, None, False, False, "not_applicable", "Unknown", "unknown", "Unsupported asset type")
 
     def _freshness_from_timestamp(self, provider_timestamp_utc: datetime) -> str:
         now = datetime.now(timezone.utc)

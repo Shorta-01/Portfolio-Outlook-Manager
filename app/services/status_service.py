@@ -6,6 +6,7 @@ from app.repositories.asset_repo import AssetRepository
 from app.repositories.market_quote_repo import MarketQuoteRepository
 from app.repositories.polling_rule_repo import PollingRuleRepository
 from app.repositories.settings_repo import SettingsRepository
+from app.services.dashboard_service import DashboardService
 from app.services.valuation_service import ValuationService
 from app.repositories.lot_repo import LotRepository
 from app.repositories.fx_rate_repo import FXRateRepository
@@ -18,6 +19,7 @@ class StatusService:
         self.polling_repo = PollingRuleRepository(db)
         self.quote_repo = MarketQuoteRepository(db)
         self.settings_repo = SettingsRepository(db)
+        self.dashboard_service = DashboardService(db)
         self.valuation_service = ValuationService(LotRepository(db), MarketQuoteRepository(db), FXRateRepository(db))
 
     def database_reachable(self) -> bool:
@@ -45,6 +47,8 @@ class StatusService:
 
         settings = self.settings_repo.get_first()
         base_currency = settings.portfolio_base_currency if settings else "EUR"
+        summary = self.dashboard_service.summary_cards()
+        owned_rows = self.dashboard_service.owned_rows()
         return {
             "app_status": "ok",
             "database_reachable": self.database_reachable(),
@@ -56,5 +60,9 @@ class StatusService:
             "assets_with_latest_quote": latest_quote_count,
             "assets_stale_or_unknown_prices": stale_or_unknown,
             "assets_without_quote_data": without_quote,
+            "assets_missing_fx_for_base_valuation": sum(1 for row in owned_rows if row.fx_status == "missing"),
+            "totals_complete": summary.totals_complete,
+            "missing_fx_asset_count": summary.missing_fx_asset_count,
+            "missing_quote_asset_count": summary.missing_quote_asset_count,
             "base_currency": base_currency,
         }
