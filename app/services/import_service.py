@@ -32,7 +32,7 @@ class ImportService:
                     raise ValueError("Unsupported import kind")
             except Exception as exc:  # noqa: BLE001
                 self.db.rollback()
-                result.failed_rows.append(ImportRowError(row_number=i, message=str(exc)))
+                result.failed_rows.append(ImportRowError(row_number=i, message=self._friendly_error(exc, row)))
         return result
 
     def _import_owned_row(self, row: dict[str, str], result: ImportResult) -> None:
@@ -92,3 +92,15 @@ class ImportService:
         else:
             result.assets_reused += 1
             result.duplicates_skipped += 1
+
+    def _friendly_error(self, exc: Exception, row: dict[str, str]) -> str:
+        msg = str(exc)
+        if "symbol" in msg.lower() or "resolve" in msg.lower():
+            return "Symbol could not be resolved. Please verify name/ISIN/exchange."
+        if "quote" in msg.lower():
+            return "Quote data missing for this asset."
+        if "fx" in msg.lower():
+            return "FX conversion missing for this row currency."
+        if "asset_type" in msg.lower() or "valid enumeration" in msg.lower() or "valid assettype" in msg.lower():
+            return f"Invalid asset type in row ({row.get('asset_type', '')})."
+        return msg
