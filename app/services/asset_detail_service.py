@@ -44,6 +44,7 @@ class AssetDetailService:
             "aggregate": aggregate,
             "valuation": valuation,
             "maturity_value": maturity_value,
+            "base_currency": base_currency,
             "is_owned": is_owned,
             "is_watchlist": asset.asset_mode == AssetMode.WATCHLIST,
             "is_cash": asset.asset_mode == AssetMode.CASH or asset.asset_type == AssetType.CASH,

@@ -29,6 +29,8 @@ def test_market_asset_valuation_and_pl(db_session):
     assert row.value_now == Decimal("216")
     assert row.unrealized_pl_amount == Decimal("6")
     assert row.unrealized_pl_percent == Decimal("2.857142857142857142857142857")
+    assert row.has_quote is True
+    assert row.has_base_value is True
 
 
 def test_fx_convert_same_currency_and_missing_rate(db_session):
@@ -81,6 +83,38 @@ def test_dashboard_summary_totals(db_session):
     summary = DashboardService(db_session).summary_cards()
     assert summary.total_invested == Decimal("20")
     assert summary.total_current_value == Decimal("22")
+    assert summary.totals_complete is True
+
+
+def test_missing_quote_does_not_fallback_to_zero_or_fake_loss(db_session):
+    asset = InstrumentService(db_session).create_asset(AssetCreate(display_name="No Quote", asset_type=AssetType.STOCK, asset_mode=AssetMode.OWNED, quote_currency="EUR"))
+    LotService(db_session).create_lot(LotCreate(asset_id=asset.id, quantity="2", buy_price="10", buy_currency="EUR", buy_date="2024-01-01"))
+
+    row = ValuationService(LotRepository(db_session), MarketQuoteRepository(db_session), FXRateRepository(db_session)).aggregate_owned_asset(asset, "EUR")
+    assert row.current_price is None
+    assert row.value_now_quote_currency is None
+    assert row.value_now is None
+    assert row.unrealized_pl_amount is None
+    assert row.unrealized_pl_percent is None
+    assert row.has_quote is False
+    assert row.has_base_value is False
+    assert row.valuation_warning == "Quote unavailable"
+
+
+def test_missing_fx_keeps_quote_side_but_not_base_value(db_session):
+    asset = InstrumentService(db_session).create_asset(AssetCreate(display_name="USD Asset", asset_type=AssetType.STOCK, asset_mode=AssetMode.OWNED, quote_currency="USD"))
+    LotService(db_session).create_lot(LotCreate(asset_id=asset.id, quantity="2", buy_price="10", buy_currency="USD", buy_date="2024-01-01"))
+    db_session.add(MarketQuote(asset_id=asset.id, provider_name="manual", price=Decimal("11"), quote_currency="USD", provider_timestamp_utc=datetime.utcnow(), freshness_status="unknown", interval_type="spot", is_backfill=False))
+    db_session.commit()
+
+    row = ValuationService(LotRepository(db_session), MarketQuoteRepository(db_session), FXRateRepository(db_session)).aggregate_owned_asset(asset, "EUR")
+    assert row.value_now_quote_currency == Decimal("22")
+    assert row.value_now is None
+    assert row.unrealized_pl_amount is None
+    assert row.has_quote is True
+    assert row.has_base_value is False
+    assert row.fx_status == "missing"
+    assert row.valuation_warning == "FX conversion unavailable"
 
 
 def test_manual_quote_fx_service_create(db_session):

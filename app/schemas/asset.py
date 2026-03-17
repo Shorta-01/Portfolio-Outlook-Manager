@@ -31,6 +31,8 @@ class AssetCreate(BaseModel):
         if self.asset_type == AssetType.TERM_DEPOSIT or self.asset_mode == AssetMode.TERM_DEPOSIT:
             if self.principal_amount is None or self.interest_rate_annual is None or self.start_date is None or self.maturity_date is None:
                 raise ValueError("term deposit requires principal, annual rate, start date, and maturity date")
+            if self.interest_rate_annual > 1:
+                self.interest_rate_annual = self.interest_rate_annual / Decimal("100")
             if self.maturity_date < self.start_date:
                 raise ValueError("maturity_date must be on or after start_date")
         return self

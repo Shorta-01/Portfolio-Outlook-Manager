@@ -20,6 +20,15 @@ def test_asset_detail_owned_market_asset(db_session):
     assert model["is_owned"] is True
     assert len(model["lots"]) == 1
     assert model["aggregate"].value_now == Decimal("15")
+    assert model["aggregate"].valuation_warning is None
+
+
+def test_asset_detail_owned_market_asset_missing_quote_warning(db_session):
+    asset = InstrumentService(db_session).create_asset(AssetCreate(display_name="NoQuote", asset_type=AssetType.STOCK, asset_mode=AssetMode.OWNED, quote_currency="EUR"))
+    LotService(db_session).create_lot(LotCreate(asset_id=asset.id, quantity="1", buy_price="10", buy_currency="EUR", buy_date="2024-01-01"))
+    model = AssetDetailService(db_session).build(asset.id)
+    assert model["aggregate"].has_quote is False
+    assert model["aggregate"].valuation_warning == "Quote unavailable"
 
 
 def test_asset_detail_watchlist_asset(db_session):

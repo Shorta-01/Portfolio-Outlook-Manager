@@ -33,12 +33,20 @@ class DashboardService:
     def summary_cards(self) -> SummaryCards:
         rows = self.owned_rows()
         total_invested = sum((row.total_invested_value_including_fees for row in rows), Decimal("0"))
-        total_current = sum((row.value_now for row in rows), Decimal("0"))
+        rows_with_base = [row for row in rows if row.has_base_value and row.value_now is not None]
+        total_current = sum((row.value_now for row in rows_with_base), Decimal("0"))
         pl_amount = total_current - total_invested
         pl_percent = (pl_amount / total_invested * Decimal("100")) if total_invested > 0 else None
+        missing_fx_asset_count = sum(1 for row in rows if row.fx_status == "missing")
+        missing_quote_asset_count = sum(1 for row in rows if not row.has_quote)
+        omitted_from_totals_count = sum(1 for row in rows if not row.has_base_value)
         return SummaryCards(
             total_invested=total_invested,
             total_current_value=total_current,
             total_unrealized_pl_amount=pl_amount,
             total_unrealized_pl_percent=pl_percent,
+            totals_complete=omitted_from_totals_count == 0,
+            missing_fx_asset_count=missing_fx_asset_count,
+            missing_quote_asset_count=missing_quote_asset_count,
+            omitted_from_totals_count=omitted_from_totals_count,
         )
