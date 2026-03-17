@@ -64,3 +64,5 @@ class Asset(Base):
     outlook_snapshots = relationship("OutlookSnapshot", back_populates="asset", cascade="all, delete-orphan")
     action_snapshots = relationship("ActionSnapshot", back_populates="asset", cascade="all, delete-orphan")
     outlook_evaluations = relationship("OutlookEvaluation", back_populates="asset", cascade="all, delete-orphan")
+    alert_rules = relationship("AlertRule", back_populates="asset", cascade="all, delete-orphan")
+    alert_events = relationship("AlertEvent", back_populates="asset", cascade="all, delete-orphan")

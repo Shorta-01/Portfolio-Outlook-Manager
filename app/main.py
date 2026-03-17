@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from app.db.base import Base
 from app.db.session import engine
 from app.logging_config import configure_logging
-from app.routes import admin, assets, dashboard, exports, health, imports, lots, settings
+from app.routes import admin, alerts, assets, dashboard, exports, health, imports, lots, settings
 from app.scheduler.engine import start_scheduler, stop_scheduler
 from app.config import settings as app_settings
 
@@ -33,3 +33,5 @@ app.include_router(settings.router)
 app.include_router(health.router)
 
 app.include_router(admin.router)
+
+app.include_router(alerts.router)

@@ -14,6 +14,7 @@ from app.repositories.polling_rule_repo import PollingRuleRepository
 from app.repositories.settings_repo import SettingsRepository
 from app.scheduler.due_logic import compute_next_due, is_due
 from app.scheduler.locks import poll_lock
+from app.services.alert_engine_service import AlertEngineService
 from app.services.market_data_ingestion_service import MarketDataIngestionService
 from app.services.scheduler_state import scheduler_state
 from app.services.outlook_service import OutlookService
@@ -57,10 +58,11 @@ def run_polling_cycle(db: Session) -> dict:
             rule.next_due_at_utc = compute_next_due(rule, now)
 
         outlook_result = OutlookService(db).run_once_for_eligible_assets()
+        alert_result = AlertEngineService(db).run_once()
         db.commit()
         scheduler_state.last_successful_poll_utc = datetime.utcnow()
         logger.info("Polling cycle finished processed=%s", processed)
-        return {"ok": True, "processed": processed, "outlook_processed": outlook_result["processed"]}
+        return {"ok": True, "processed": processed, "outlook_processed": outlook_result["processed"], "alerts_created": alert_result["created"]}
     except Exception:
         logger.exception("Polling cycle failed")
         db.rollback()

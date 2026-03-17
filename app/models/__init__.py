@@ -1,4 +1,6 @@
 from app.models.app_setting import AppSetting
+from app.models.alert_event import AlertEvent
+from app.models.alert_rule import AlertRule
 from app.models.asset import Asset, AssetMode, AssetType
 from app.models.action_snapshot import ActionSnapshot
 from app.models.fx_rate import FXRate
@@ -11,6 +13,8 @@ from app.models.outlook_evaluation import OutlookEvaluation
 
 __all__ = [
     "Asset",
+    "AlertEvent",
+    "AlertRule",
     "ActionSnapshot",
     "AssetMode",
     "AssetType",
