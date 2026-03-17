@@ -1,0 +1,64 @@
+from uuid import uuid4
+
+from sqlalchemy.orm import Session
+
+from app.models.asset import Asset, AssetMode, AssetType
+from app.models.polling_rule import PollingRule
+from app.repositories.asset_repo import AssetRepository
+from app.repositories.polling_rule_repo import PollingRuleRepository
+from app.repositories.settings_repo import SettingsRepository
+from app.schemas.asset import AssetCreate
+
+POLL_CAPABLE_TYPES = {
+    AssetType.STOCK,
+    AssetType.ETF,
+    AssetType.FUND,
+    AssetType.GOLD,
+    AssetType.OIL,
+    AssetType.BOND,
+    AssetType.FOREX,
+    AssetType.CRYPTO,
+    AssetType.OTHER,
+}
+
+
+class InstrumentService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.asset_repo = AssetRepository(db)
+        self.polling_repo = PollingRuleRepository(db)
+        self.settings_repo = SettingsRepository(db)
+
+    def create_asset(self, payload: AssetCreate) -> Asset:
+        asset = Asset(
+            symbol_internal=f"asset_{uuid4().hex[:12]}",
+            display_name=payload.display_name.strip(),
+            asset_type=payload.asset_type,
+            asset_mode=payload.asset_mode,
+            quote_currency=payload.quote_currency.upper(),
+            exchange=payload.exchange,
+            isin=(payload.isin.strip().upper() if payload.isin else None),
+            is_manual_asset=payload.is_manual_asset,
+        )
+        self.asset_repo.add(asset)
+        self._create_default_polling_rule(asset)
+        self.db.commit()
+        self.db.refresh(asset)
+        return asset
+
+    def _create_default_polling_rule(self, asset: Asset) -> None:
+        if asset.asset_mode not in {AssetMode.OWNED, AssetMode.WATCHLIST}:
+            return
+        if asset.asset_type not in POLL_CAPABLE_TYPES:
+            return
+        defaults = self.settings_repo.get_first()
+        interval = defaults.default_poll_every_minutes if defaults else 5
+        market_hours = defaults.use_market_hours_default if defaults else False
+        self.polling_repo.add(
+            PollingRule(
+                asset_id=asset.id,
+                poll_every_minutes=interval,
+                market_hours_only=market_hours,
+                enabled=True,
+            )
+        )

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Add Asset</h2>
+<form method="post" action="/assets" class="card">
+<input name="display_name" placeholder="Display name" required />
+<select name="asset_type">{% for t in asset_types %}<option value="{{t.value}}">{{t.value}}</option>{% endfor %}</select>
+<select name="asset_mode">{% for m in asset_modes %}<option value="{{m.value}}">{{m.value}}</option>{% endfor %}</select>
+<input name="quote_currency" placeholder="Quote currency" required />
+<input name="exchange" placeholder="Exchange" />
+<input name="isin" placeholder="ISIN (for funds)" />
+<button type="submit">Create</button>
+</form>
+{% endblock %}

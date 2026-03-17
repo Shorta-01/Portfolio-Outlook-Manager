@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Settings</h2>
+<form method="post" action="/settings" class="card">
+<input name="portfolio_base_currency" value="{{settings.portfolio_base_currency if settings else 'EUR'}}" />
+<input name="default_poll_every_minutes" type="number" min="1" value="{{settings.default_poll_every_minutes if settings else 5}}" />
+<label><input name="use_market_hours_default" type="checkbox" {% if settings and settings.use_market_hours_default %}checked{% endif %}/> Market hours default</label>
+<button type="submit">Save</button>
+</form>
+<h3>Polling rules</h3>
+<ul>{% for rule in polling_rules %}<li>Asset {{rule.asset_id}}: {{rule.poll_every_minutes}} min</li>{% endfor %}</ul>
+{% endblock %}

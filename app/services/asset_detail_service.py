@@ -1,0 +1,21 @@
+from sqlalchemy.orm import Session
+
+from app.models.asset import AssetMode
+from app.repositories.asset_repo import AssetRepository
+from app.repositories.lot_repo import LotRepository
+from app.services.portfolio_service import PortfolioService
+
+
+class AssetDetailService:
+    def __init__(self, db: Session):
+        self.asset_repo = AssetRepository(db)
+        self.lot_repo = LotRepository(db)
+        self.portfolio_service = PortfolioService(self.lot_repo)
+
+    def build(self, asset_id: int) -> dict:
+        asset = self.asset_repo.get(asset_id)
+        if asset is None:
+            raise ValueError("Asset not found")
+        lots = self.lot_repo.list_for_asset(asset.id) if asset.asset_mode == AssetMode.OWNED else []
+        aggregate = self.portfolio_service.aggregate_asset(asset) if asset.asset_mode == AssetMode.OWNED else None
+        return {"asset": asset, "lots": lots, "aggregate": aggregate, "is_owned": asset.asset_mode == AssetMode.OWNED}

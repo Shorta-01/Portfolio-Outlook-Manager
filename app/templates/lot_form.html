@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Add Lot</h2>
+<form method="post" action="/lots" class="card">
+<input name="asset_id" value="{{ asset_id or '' }}" placeholder="Asset ID" required />
+<input name="quantity" placeholder="Quantity" required />
+<input name="buy_price" placeholder="Buy price" required />
+<input name="buy_currency" placeholder="Buy currency" required />
+<input name="buy_date" type="date" required />
+<input name="fees" placeholder="Fees" value="0" />
+<textarea name="notes" placeholder="Notes"></textarea>
+<button type="submit">Create lot</button>
+</form>
+{% endblock %}
