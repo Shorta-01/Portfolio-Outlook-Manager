@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from app.db.base import Base
 from app.db.session import engine
 from app.logging_config import configure_logging
-from app.routes import assets, dashboard, health, imports, lots, settings
+from app.routes import admin, assets, dashboard, health, imports, lots, settings
 
 
 @asynccontextmanager
@@ -25,3 +25,5 @@ app.include_router(lots.router)
 app.include_router(imports.router)
 app.include_router(settings.router)
 app.include_router(health.router)
+
+app.include_router(admin.router)

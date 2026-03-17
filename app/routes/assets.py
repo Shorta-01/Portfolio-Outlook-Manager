@@ -26,6 +26,11 @@ def create_asset(
     quote_currency: str = Form(...),
     exchange: str | None = Form(None),
     isin: str | None = Form(None),
+    current_amount: str | None = Form(None),
+    principal_amount: str | None = Form(None),
+    interest_rate_annual: str | None = Form(None),
+    start_date: str | None = Form(None),
+    maturity_date: str | None = Form(None),
     db: Session = Depends(get_db_session),
 ):
     service = InstrumentService(db)
@@ -37,6 +42,11 @@ def create_asset(
             quote_currency=quote_currency,
             exchange=exchange,
             isin=isin,
+            current_amount=current_amount if current_amount else None,
+            principal_amount=principal_amount if principal_amount else None,
+            interest_rate_annual=interest_rate_annual if interest_rate_annual else None,
+            start_date=start_date if start_date else None,
+            maturity_date=maturity_date if maturity_date else None,
         )
     )
     return RedirectResponse(url=f"/assets/{asset.id}", status_code=303)

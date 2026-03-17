@@ -3,8 +3,14 @@
 <h2>{{asset.display_name}}</h2>
 <div class="card"><p>{{asset.asset_type.value}} / {{asset.asset_mode.value}} / {{asset.quote_currency}}</p>
 <p>ISIN: {{asset.isin or '—'}}</p>
-{% if is_owned %}<p>Quantity {{aggregate.total_quantity}} | Average buy price {{aggregate.weighted_avg_buy_price_ex_fees}} | Value at buy {{aggregate.total_invested_value_including_fees}}</p>{% endif %}
-<p>Outlook/Suggested action/Confidence/Last update/Freshness/Source/Reason/Risk note placeholders</p></div>
+{% if is_owned %}<p>Quantity {{aggregate.total_quantity}} | Average buy price {{aggregate.weighted_avg_buy_price_ex_fees}} | Current price {{aggregate.current_price if aggregate.current_price is not none else '—'}}</p>
+<p>Value at buy {{aggregate.total_invested_value_including_fees}} | Value now {{aggregate.value_now}} | P/L {{aggregate.unrealized_pl_amount}} ({{aggregate.unrealized_pl_percent if aggregate.unrealized_pl_percent is not none else '—'}})</p>
+<p>Freshness {{aggregate.freshness_status}} | Source {{aggregate.source_label}}</p>{% endif %}
+{% if is_cash %}<p>Amount {{asset.current_amount}} {{asset.quote_currency}} | Value now {{valuation.value_now_base_currency}}</p><p>Source {{valuation.source_label}} | Freshness {{valuation.freshness_status}}</p>{% endif %}
+{% if is_term_deposit %}<p>Principal {{asset.principal_amount}} | Annual rate {{asset.interest_rate_annual}} | Start {{asset.start_date}} | Maturity {{asset.maturity_date}}</p>
+<p>Accrued value now {{valuation.value_now_base_currency}} | Maturity value {{maturity_value}}</p><p>Source {{valuation.source_label}} | Freshness {{valuation.freshness_status}}</p>{% endif %}
+{% if is_watchlist %}<p>Outlook/Suggested action/Confidence/Last update/Freshness/Source/Reason/Risk note placeholders</p>{% endif %}
+</div>
 {% include 'components/tabs.html' %}
 {% if is_owned %}{% include 'components/lot_table.html' %}{% endif %}
 {% endblock %}

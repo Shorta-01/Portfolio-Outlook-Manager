@@ -49,6 +49,14 @@ class InstrumentService:
             exchange=payload.exchange,
             isin=(payload.isin.strip().upper() if payload.isin else None),
             is_manual_asset=payload.is_manual_asset,
+            current_amount=payload.current_amount,
+            principal_amount=payload.principal_amount,
+            interest_rate_annual=payload.interest_rate_annual,
+            start_date=payload.start_date,
+            maturity_date=payload.maturity_date,
+            accrual_method=payload.accrual_method,
+            payout_type=payload.payout_type,
+            bank_name=payload.bank_name,
         )
         self.asset_repo.add(asset)
         self._create_default_polling_rule(asset)
