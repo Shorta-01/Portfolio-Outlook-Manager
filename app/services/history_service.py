@@ -29,42 +29,47 @@ class HistoryService:
         self.resolver = SymbolResolver()
 
     def backfill_asset(self, asset: Asset) -> dict:
-        if asset.asset_type in {AssetType.CASH, AssetType.TERM_DEPOSIT}:
-            return {"ok": False, "reason": "Backfill disabled for cash/term deposits", "quotes": 0, "fx": 0}
-        if asset.asset_type not in MARKET_PRICED_TYPES:
-            return {"ok": False, "reason": "Asset type not market-priced", "quotes": 0, "fx": 0}
+        try:
+            if asset.asset_type in {AssetType.CASH, AssetType.TERM_DEPOSIT}:
+                return {"ok": False, "reason": "Backfill disabled for cash/term deposits", "quotes": 0, "fx": 0}
+            if asset.asset_type not in MARKET_PRICED_TYPES:
+                return {"ok": False, "reason": "Asset type not market-priced", "quotes": 0, "fx": 0}
 
-        resolved = self.resolver.resolve(asset)
-        if not resolved.lookup_possible:
-            return {"ok": False, "reason": resolved.lookup_reason, "quotes": 0, "fx": 0}
+            resolved = self.resolver.resolve(asset)
+            if not resolved.lookup_possible:
+                return {"ok": False, "reason": resolved.lookup_reason, "quotes": 0, "fx": 0}
 
-        settings = self.settings_repo.get_first()
-        years = settings.backfill_daily_years_default if settings else 5
-        end_date = date.today()
-        if asset.asset_mode == AssetMode.OWNED:
-            lots = self.lot_repo.list_for_asset(asset.id)
-            earliest_lot = min((lot.buy_date for lot in lots), default=end_date)
-            start_date = earliest_lot - timedelta(days=365 * years)
-        else:
-            start_date = end_date - timedelta(days=365 * years)
+            settings = self.settings_repo.get_first()
+            years = settings.backfill_daily_years_default if settings else 5
+            end_date = date.today()
+            if asset.asset_mode == AssetMode.OWNED:
+                lots = self.lot_repo.list_for_asset(asset.id)
+                earliest_lot = min((lot.buy_date for lot in lots), default=end_date)
+                start_date = earliest_lot - timedelta(days=365 * years)
+            else:
+                start_date = end_date - timedelta(days=365 * years)
 
-        history = self.provider.fetch_historical_daily(asset, start_date, end_date)
-        quote_count = 0
-        for item in history:
-            self.ingestion.ingest_quote(asset.id, item, is_backfill=True)
-            quote_count += 1
+            history = self.provider.fetch_historical_daily(asset, start_date, end_date)
+            quote_count = 0
+            for item in history:
+                self.ingestion.ingest_quote(asset.id, item, is_backfill=True)
+                quote_count += 1
 
-        fx_count = 0
-        base_currency = (settings.portfolio_base_currency if settings else "EUR").upper()
-        if asset.quote_currency.upper() != base_currency:
-            fx_rows = self.provider.fetch_historical_fx(asset.quote_currency.upper(), base_currency, start_date, end_date)
-            for fx in fx_rows:
-                self.ingestion.ingest_fx(fx)
-                fx_count += 1
+            fx_count = 0
+            base_currency = (settings.portfolio_base_currency if settings else "EUR").upper()
+            if asset.quote_currency.upper() != base_currency:
+                fx_rows = self.provider.fetch_historical_fx(asset.quote_currency.upper(), base_currency, start_date, end_date)
+                for fx in fx_rows:
+                    self.ingestion.ingest_fx(fx)
+                    fx_count += 1
 
-        scheduler_state.last_successful_backfill_utc = datetime.utcnow()
-        self.db.commit()
-        return {"ok": True, "reason": "backfill completed", "quotes": quote_count, "fx": fx_count}
+            scheduler_state.mark_job_success("backfill")
+            self.db.commit()
+            return {"ok": True, "reason": "backfill completed", "quotes": quote_count, "fx": fx_count}
+        except Exception as exc:
+            scheduler_state.mark_job_failure("backfill", str(exc))
+            self.db.rollback()
+            raise
 
     def backfill_asset_by_id(self, asset_id: int) -> dict:
         asset = self.asset_repo.get(asset_id)

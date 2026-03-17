@@ -7,6 +7,7 @@ from app.models.outlook_evaluation import OutlookEvaluation
 from app.repositories.market_quote_repo import MarketQuoteRepository
 from app.repositories.outlook_evaluation_repo import OutlookEvaluationRepository
 from app.repositories.outlook_snapshot_repo import OutlookSnapshotRepository
+from app.services.scheduler_state import scheduler_state
 
 SHORT_HORIZON_HOURS = 24
 MEDIUM_HORIZON_HOURS = 24 * 7
@@ -102,24 +103,32 @@ class OutlookEvaluationService:
         return self.evaluation_repo.insert_evaluation(evaluation)
 
     def run_once(self) -> dict:
-        now_utc = datetime.utcnow()
-        earliest_duration = min(h.duration for h in HORIZONS)
-        due_before = now_utc - earliest_duration
-        evaluated = 0
-        for snapshot in self.snapshot_repo.list_due_for_evaluation(due_before_utc=due_before):
-            for horizon in HORIZONS:
-                res = self._evaluate_single(snapshot, horizon, now_utc)
-                if res is not None:
-                    evaluated += 1
-        self.db.commit()
-        total_snapshots = self.snapshot_repo.count_rows()
-        total_evaluated = self.evaluation_repo.count_rows()
-        return {
-            "ok": True,
-            "evaluated_outlook_count": evaluated,
-            "unevaluated_outlook_count": max(total_snapshots * len(HORIZONS) - total_evaluated, 0),
-            "total_evaluated_rows": total_evaluated,
-        }
+        try:
+            now_utc = datetime.utcnow()
+            earliest_duration = min(h.duration for h in HORIZONS)
+            due_before = now_utc - earliest_duration
+            evaluated = 0
+            for snapshot in self.snapshot_repo.list_due_for_evaluation(due_before_utc=due_before):
+                for horizon in HORIZONS:
+                    res = self._evaluate_single(snapshot, horizon, now_utc)
+                    if res is not None:
+                        evaluated += 1
+            self.db.commit()
+            total_snapshots = self.snapshot_repo.count_rows()
+            total_evaluated = self.evaluation_repo.count_rows()
+            scheduler_state.mark_job_success("evaluation")
+            scheduler_state.evaluated_outlook_count = evaluated
+            scheduler_state.unevaluated_outlook_count = max(total_snapshots * len(HORIZONS) - total_evaluated, 0)
+            return {
+                "ok": True,
+                "evaluated_outlook_count": evaluated,
+                "unevaluated_outlook_count": scheduler_state.unevaluated_outlook_count,
+                "total_evaluated_rows": total_evaluated,
+            }
+        except Exception as exc:
+            scheduler_state.mark_job_failure("evaluation", str(exc))
+            self.db.rollback()
+            raise
 
     def scorecard_for_asset(self, asset_id: int) -> dict:
         return {

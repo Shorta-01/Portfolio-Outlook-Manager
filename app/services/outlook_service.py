@@ -98,24 +98,29 @@ class OutlookService:
         return outlook, action
 
     def run_once_for_eligible_assets(self) -> dict:
-        processed = 0
-        skipped = 0
-        unchanged = 0
-        for asset in self.asset_repo.list_all():
-            if not self.eligible_asset(asset):
-                skipped += 1
-                continue
-            if not self.quote_repo.has_quote_for_asset(asset.id):
-                skipped += 1
-                continue
-            created = self.run_for_asset(asset.id)
-            if created is None:
-                unchanged += 1
-                continue
-            processed += 1
-        self.db.commit()
-        scheduler_state.last_successful_outlook_run_utc = datetime.utcnow()
-        return {"ok": True, "processed": processed, "skipped": skipped, "unchanged": unchanged}
+        try:
+            processed = 0
+            skipped = 0
+            unchanged = 0
+            for asset in self.asset_repo.list_all():
+                if not self.eligible_asset(asset):
+                    skipped += 1
+                    continue
+                if not self.quote_repo.has_quote_for_asset(asset.id):
+                    skipped += 1
+                    continue
+                created = self.run_for_asset(asset.id)
+                if created is None:
+                    unchanged += 1
+                    continue
+                processed += 1
+            self.db.commit()
+            scheduler_state.mark_job_success("outlook")
+            return {"ok": True, "processed": processed, "skipped": skipped, "unchanged": unchanged}
+        except Exception as exc:
+            scheduler_state.mark_job_failure("outlook", str(exc))
+            self.db.rollback()
+            raise
 
     def latest_for_asset(self, asset_id: int):
         return self.outlook_repo.get_latest_by_asset(asset_id), self.action_repo.get_latest_by_asset(asset_id)

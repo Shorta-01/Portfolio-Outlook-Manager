@@ -13,6 +13,7 @@ from app.repositories.polling_rule_repo import PollingRuleRepository
 from app.repositories.settings_repo import SettingsRepository
 from app.scheduler.engine import scheduler_running
 from app.services.dashboard_service import DashboardService
+from app.services.export_service import ExportService
 from app.services.outlook_evaluation_service import OutlookEvaluationService
 from app.services.scheduler_state import scheduler_state
 from app.services.valuation_service import ValuationService
@@ -30,6 +31,7 @@ class StatusService:
         self.dashboard_service = DashboardService(db)
         self.outlook_repo = OutlookSnapshotRepository(db)
         self.outlook_eval_service = OutlookEvaluationService(db)
+        self.export_service = ExportService(db)
         self.valuation_service = ValuationService(LotRepository(db), MarketQuoteRepository(db), FXRateRepository(db))
 
     def database_reachable(self) -> bool:
@@ -38,6 +40,37 @@ class StatusService:
             return True
         except Exception:  # noqa: BLE001
             return False
+
+    def _runtime_state(self) -> dict:
+        jobs = scheduler_state.jobs
+        return {
+            "app_status": "ok",
+            "scheduler_status": "running" if scheduler_running() else "stopped",
+            "scheduler_running": scheduler_running(),
+            "scheduler_started_at_utc": scheduler_state.startup_utc,
+            "scheduler_stopped_at_utc": scheduler_state.shutdown_utc,
+            "scheduler_start_error": scheduler_state.last_start_error,
+            "last_successful_poll_utc": jobs["polling"].last_success_utc,
+            "last_failed_poll_utc": jobs["polling"].last_failure_utc,
+            "poll_error_count": jobs["polling"].error_count,
+            "poll_last_error_summary": jobs["polling"].last_error_summary,
+            "last_successful_backfill_utc": jobs["backfill"].last_success_utc,
+            "last_failed_backfill_utc": jobs["backfill"].last_failure_utc,
+            "last_successful_outlook_run_utc": jobs["outlook"].last_success_utc,
+            "last_failed_outlook_run_utc": jobs["outlook"].last_failure_utc,
+            "last_successful_outlook_evaluation_run_utc": jobs["evaluation"].last_success_utc,
+            "last_failed_outlook_evaluation_run_utc": jobs["evaluation"].last_failure_utc,
+            "last_successful_alert_run_utc": jobs["alerts"].last_success_utc,
+            "last_failed_alert_run_utc": jobs["alerts"].last_failure_utc,
+            "last_successful_cleanup_run_utc": jobs["cleanup"].last_success_utc,
+            "last_failed_cleanup_run_utc": jobs["cleanup"].last_failure_utc,
+            "cleanup_error_count": jobs["cleanup"].error_count,
+            "cleanup_last_error_summary": jobs["cleanup"].last_error_summary,
+            "last_cleanup_summary": scheduler_state.last_cleanup_summary,
+            "last_successful_backup_utc": jobs["backup"].last_success_utc,
+            "last_failed_backup_utc": jobs["backup"].last_failure_utc,
+            "backup_error_count": jobs["backup"].error_count,
+        }
 
     def build(self) -> dict:
         owned_assets = self.asset_repo.list_by_mode(AssetMode.OWNED)
@@ -60,38 +93,41 @@ class StatusService:
         summary = self.dashboard_service.summary_cards()
         owned_rows = self.dashboard_service.owned_rows()
         eval_scorecard = self.outlook_eval_service.global_scorecard()
+        all_assets = self.asset_repo.list_all()
+        backup_meta = self.export_service.latest_backup_metadata()
+        runtime = self._runtime_state()
+
         return {
-            "app_status": "ok",
+            **runtime,
             "database_reachable": self.database_reachable(),
             "settings_present": settings is not None,
             "asset_counts": self.asset_repo.count_by_mode(),
             "polling_rule_count": self.polling_repo.count(),
-            "scheduler_status": "running" if scheduler_running() else "stopped",
-            "scheduler_running": scheduler_running(),
             "provider_freshness": "active",
             "assets_with_latest_quote": latest_quote_count,
             "assets_stale_or_unknown_prices": stale_or_unknown,
+            "stale_assets_count": stale_or_unknown,
             "assets_without_quote_data": without_quote,
+            "assets_missing_quote": without_quote,
             "assets_missing_fx_for_base_valuation": sum(1 for row in owned_rows if row.fx_status == "missing"),
+            "assets_missing_fx": sum(1 for row in owned_rows if row.fx_status == "missing"),
+            "assets_unresolved_for_lookup_count": sum(1 for a in all_assets if (a.provider_symbol_primary in {None, ""} and a.isin in {None, ""})),
             "totals_complete": summary.totals_complete,
+            "incomplete_valuation_count": summary.missing_fx_asset_count + summary.missing_quote_asset_count,
             "missing_fx_asset_count": summary.missing_fx_asset_count,
             "missing_quote_asset_count": summary.missing_quote_asset_count,
             "base_currency": base_currency,
-            "last_successful_poll_utc": scheduler_state.last_successful_poll_utc,
-            "last_successful_backfill_utc": scheduler_state.last_successful_backfill_utc,
-            "assets_with_history_count": sum(1 for asset in self.asset_repo.list_all() if self.quote_repo.has_quote_for_asset(asset.id)),
-            "assets_without_history_count": sum(1 for asset in self.asset_repo.list_all() if not self.quote_repo.has_quote_for_asset(asset.id)),
+            "assets_with_history_count": sum(1 for asset in all_assets if self.quote_repo.has_quote_for_asset(asset.id)),
+            "assets_without_history_count": sum(1 for asset in all_assets if not self.quote_repo.has_quote_for_asset(asset.id)),
             "quote_rows_count": self.quote_repo.count_rows(),
             "fx_rows_count": FXRateRepository(self.db).count_rows(),
-            "assets_with_outlook_count": sum(1 for asset in self.asset_repo.list_all() if self.outlook_repo.get_latest_by_asset(asset.id) is not None),
-            "assets_without_outlook_count": sum(1 for asset in self.asset_repo.list_all() if self.outlook_repo.get_latest_by_asset(asset.id) is None),
-            "last_successful_outlook_run_utc": scheduler_state.last_successful_outlook_run_utc,
+            "assets_with_outlook_count": sum(1 for asset in all_assets if self.outlook_repo.get_latest_by_asset(asset.id) is not None),
+            "assets_without_outlook_count": sum(1 for asset in all_assets if self.outlook_repo.get_latest_by_asset(asset.id) is None),
             "total_outlook_snapshots": eval_scorecard["total_outlook_snapshots"],
             "total_evaluated_outlooks": eval_scorecard["total_evaluated"],
             "global_short_term_hit_rate": eval_scorecard["accuracy"]["short"]["hit_rate"],
             "global_medium_term_hit_rate": eval_scorecard["accuracy"]["medium"]["hit_rate"],
             "global_confidence_bucket_stats": eval_scorecard["confidence"],
-            "last_successful_outlook_evaluation_run_utc": scheduler_state.last_successful_outlook_evaluation_run_utc,
             "evaluated_outlook_count": scheduler_state.evaluated_outlook_count,
             "unevaluated_outlook_count": scheduler_state.unevaluated_outlook_count,
             "alerts_enabled": settings.alerts_enabled_global if settings else True,
@@ -99,5 +135,6 @@ class StatusService:
             "total_alert_events": self.alert_event_repo.count(),
             "unread_alert_count": self.alert_event_repo.unread_count(),
             "active_alert_count": self.alert_event_repo.active_count(),
-            "last_successful_alert_run_utc": scheduler_state.last_successful_alert_run_utc,
+            "latest_backup_timestamp_utc": backup_meta["timestamp_utc"],
+            "latest_backup_path": backup_meta["path"],
         }

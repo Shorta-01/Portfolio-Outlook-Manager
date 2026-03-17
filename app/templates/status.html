@@ -3,20 +3,57 @@
 <h2>Status</h2>
 {% if message %}<p class="notice">{{message}}</p>{% endif %}
 <div class="cards">
-  <div class="card"><h3>Scheduler</h3><p>State: {{status.scheduler_status}}</p><p>Last poll: {{status.last_successful_poll_utc or '—'}}</p><p>Last backfill: {{status.last_successful_backfill_utc or '—'}}</p><p>Last outlook: {{status.last_successful_outlook_run_utc or '—'}}</p><p>Last evaluation: {{status.last_successful_outlook_evaluation_run_utc or '—'}}</p></div>
-  <div class="card"><h3>Data coverage</h3><p>Quote rows: {{status.quote_rows_count}}</p><p>FX rows: {{status.fx_rows_count}}</p><p>Assets without history: {{status.assets_without_history_count}}</p><p>Totals complete: {{status.totals_complete}}</p></div><div class="card"><h3>Alerts</h3><p>Enabled: {{status.alerts_enabled}}</p><p>Rules: {{status.total_alert_rules}}</p><p>Events: {{status.total_alert_events}}</p><p>Unread: {{status.unread_alert_count}}</p><p>Active: {{status.active_alert_count}}</p><p>Last run: {{status.last_successful_alert_run_utc or "—"}}</p></div>
+  <div class="card">
+    <h3>Runtime</h3>
+    <p>App: {{status.app_status}}</p>
+    <p>Scheduler: {{status.scheduler_status}}</p>
+    <p>Last poll: {{status.last_successful_poll_utc or '—'}}</p>
+    <p>Last backfill: {{status.last_successful_backfill_utc or '—'}}</p>
+    <p>Last outlook: {{status.last_successful_outlook_run_utc or '—'}}</p>
+    <p>Last evaluation: {{status.last_successful_outlook_evaluation_run_utc or '—'}}</p>
+    <p>Last alerts: {{status.last_successful_alert_run_utc or '—'}}</p>
+    <p>Last cleanup: {{status.last_successful_cleanup_run_utc or '—'}}</p>
+    <p>Latest backup: {{status.latest_backup_timestamp_utc or '—'}}</p>
+  </div>
+  <div class="card">
+    <h3>Data coverage</h3>
+    <p>Assets with history: {{status.assets_with_history_count}}</p>
+    <p>Assets without history: {{status.assets_without_history_count}}</p>
+    <p>Quote rows: {{status.quote_rows_count}}</p>
+    <p>FX rows: {{status.fx_rows_count}}</p>
+    <p>Stale/unknown assets: {{status.stale_assets_count}}</p>
+    <p>Incomplete valuations: {{status.incomplete_valuation_count}}</p>
+    <p>Missing quote: {{status.assets_missing_quote}}</p>
+    <p>Missing FX: {{status.assets_missing_fx}}</p>
+  </div>
+  <div class="card">
+    <h3>Alerts</h3>
+    <p>Enabled: {{status.alerts_enabled}}</p>
+    <p>Rules: {{status.total_alert_rules}}</p>
+    <p>Events: {{status.total_alert_events}}</p>
+    <p>Unread: {{status.unread_alert_count}}</p>
+    <p>Active: {{status.active_alert_count}}</p>
+  </div>
+  <div class="card">
+    <h3>Outlook quality</h3>
+    <p>Assets with outlook: {{status.assets_with_outlook_count}}</p>
+    <p>Assets without outlook: {{status.assets_without_outlook_count}}</p>
+    <p>Evaluated outlook count: {{status.total_evaluated_outlooks}}</p>
+    <p>Global short hit rate: {{status.global_short_term_hit_rate}}</p>
+    <p>Global medium hit rate: {{status.global_medium_term_hit_rate}}</p>
+  </div>
 </div>
-<ul>
-<li>Assets with latest quote: {{status.assets_with_latest_quote}}</li>
-<li>Assets stale/unknown: {{status.assets_stale_or_unknown_prices}}</li>
-<li>Assets without quote data: {{status.assets_without_quote_data}}</li>
-<li>Assets missing FX for base valuation: {{status.assets_missing_fx_for_base_valuation}}</li>
-</ul>
-<h3>Manual operations</h3>
-<form method="post" action="/admin/polling/run-once"><button type="submit">Run polling once</button></form>
-<form method="post" action="/admin/outlook/run-once"><button type="submit">Run outlook once</button></form>
-<form method="post" action="/admin/outlook/evaluate-run-once"><button type="submit">Run outlook evaluation once</button></form>
-<form method="post" action="/admin/alerts/run-once"><button type="submit">Run alerts once</button></form>
-<form method="post" action="/exports/backup-db"><button type="submit">Create SQLite backup copy</button></form>
-<p><a href="/exports/portfolio.csv">Portfolio CSV</a> · <a href="/exports/watchlist.csv">Watchlist CSV</a> · <a href="/exports/portfolio-lots.csv">Lots CSV</a></p>
+
+<div class="card">
+  <h3>Manual operations</h3>
+  <form method="post" action="/admin/polling/run-once"><button type="submit">Run polling once</button></form>
+  <form method="post" action="/admin/outlook/run-once"><button type="submit">Run outlook once</button></form>
+  <form method="post" action="/admin/outlook/evaluate-run-once"><button type="submit">Run evaluation once</button></form>
+  <form method="post" action="/admin/alerts/run-once"><button type="submit">Run alerts once</button></form>
+  <form method="post" action="/admin/cleanup/run-once"><button type="submit">Run cleanup once</button></form>
+  <form method="post" action="/exports/backup-db"><button type="submit">Create backup</button></form>
+  <p>Latest backup path: {{status.latest_backup_path or '—'}}</p>
+  <p>Last cleanup removed rows: {{status.last_cleanup_summary or {}}}</p>
+  <p><a href="/exports/portfolio.csv">Portfolio CSV</a> · <a href="/exports/watchlist.csv">Watchlist CSV</a> · <a href="/exports/portfolio-lots.csv">Lots CSV</a></p>
+</div>
 {% endblock %}

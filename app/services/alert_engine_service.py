@@ -48,24 +48,29 @@ class AlertEngineService:
         return settings
 
     def run_once(self) -> dict:
-        settings = self.ensure_default_settings()
-        if not settings.alerts_enabled_global:
-            return {"created": 0, "resolved": 0, "evaluated_rules": 0}
+        try:
+            settings = self.ensure_default_settings()
+            if not settings.alerts_enabled_global:
+                scheduler_state.mark_job_success("alerts")
+                return {"created": 0, "resolved": 0, "evaluated_rules": 0}
 
-        created = 0
-        resolved = 0
-        rules = self.rule_repo.list_enabled()
-        assets = self.asset_repo.list_all()
-        for rule in rules:
-            for asset in self._assets_for_rule(rule, assets):
-                fired = self._evaluate_rule(rule, asset, settings)
-                if fired:
-                    created += 1
-                res = self._resolve_if_needed(rule, asset, settings)
-                if res:
-                    resolved += 1
-        scheduler_state.last_successful_alert_run_utc = datetime.utcnow()
-        return {"created": created, "resolved": resolved, "evaluated_rules": len(rules)}
+            created = 0
+            resolved = 0
+            rules = self.rule_repo.list_enabled()
+            assets = self.asset_repo.list_all()
+            for rule in rules:
+                for asset in self._assets_for_rule(rule, assets):
+                    fired = self._evaluate_rule(rule, asset, settings)
+                    if fired:
+                        created += 1
+                    res = self._resolve_if_needed(rule, asset, settings)
+                    if res:
+                        resolved += 1
+            scheduler_state.mark_job_success("alerts")
+            return {"created": created, "resolved": resolved, "evaluated_rules": len(rules)}
+        except Exception as exc:
+            scheduler_state.mark_job_failure("alerts", str(exc))
+            raise
 
     def _assets_for_rule(self, rule: AlertRule, all_assets: list[Asset]) -> list[Asset]:
         if rule.asset_id is not None:

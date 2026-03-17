@@ -1,4 +1,5 @@
 import csv
+import logging
 import shutil
 from datetime import datetime
 from io import StringIO
@@ -11,6 +12,9 @@ from app.models.asset import AssetMode
 from app.repositories.asset_repo import AssetRepository
 from app.repositories.lot_repo import LotRepository
 from app.services.dashboard_service import DashboardService
+from app.services.scheduler_state import scheduler_state
+
+logger = logging.getLogger(__name__)
 
 
 class ExportService:
@@ -57,8 +61,21 @@ class ExportService:
 
     def create_sqlite_backup(self) -> Path:
         db_path = Path(settings.database_url.replace("sqlite:///", ""))
-        backup_dir = Path("backups")
+        backup_dir = Path(settings.backup_dir)
         backup_dir.mkdir(exist_ok=True)
         target = backup_dir / f"portfolio_backup_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.sqlite3"
         shutil.copy2(db_path, target)
+        scheduler_state.mark_job_success("backup")
+        scheduler_state.last_backup_path = str(target)
+        logger.info("Database backup created path=%s", target)
         return target
+
+    def latest_backup_metadata(self) -> dict:
+        backup_dir = Path(settings.backup_dir)
+        if not backup_dir.exists():
+            return {"timestamp_utc": None, "path": None}
+        backups = sorted(backup_dir.glob("portfolio_backup_*.sqlite3"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if not backups:
+            return {"timestamp_utc": None, "path": None}
+        latest = backups[0]
+        return {"timestamp_utc": datetime.utcfromtimestamp(latest.stat().st_mtime), "path": str(latest)}

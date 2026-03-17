@@ -15,6 +15,7 @@ from app.repositories.settings_repo import SettingsRepository
 from app.scheduler.due_logic import compute_next_due, is_due
 from app.scheduler.locks import poll_lock
 from app.services.alert_engine_service import AlertEngineService
+from app.services.cleanup_service import CleanupService
 from app.services.market_data_ingestion_service import MarketDataIngestionService
 from app.services.scheduler_state import scheduler_state
 from app.services.outlook_service import OutlookService
@@ -59,12 +60,17 @@ def run_polling_cycle(db: Session) -> dict:
 
         outlook_result = OutlookService(db).run_once_for_eligible_assets()
         alert_result = AlertEngineService(db).run_once()
+        cleanup_ran = False
+        if scheduler_state.jobs["cleanup"].last_success_utc is None or (datetime.utcnow() - scheduler_state.jobs["cleanup"].last_success_utc).total_seconds() >= 86400:
+            CleanupService(db).run_once()
+            cleanup_ran = True
         db.commit()
-        scheduler_state.last_successful_poll_utc = datetime.utcnow()
-        logger.info("Polling cycle finished processed=%s", processed)
-        return {"ok": True, "processed": processed, "outlook_processed": outlook_result["processed"], "alerts_created": alert_result["created"]}
-    except Exception:
+        scheduler_state.mark_job_success("polling")
+        logger.info("Polling cycle finished processed=%s outlook_processed=%s alerts_created=%s", processed, outlook_result["processed"], alert_result["created"])
+        return {"ok": True, "processed": processed, "outlook_processed": outlook_result["processed"], "alerts_created": alert_result["created"], "cleanup_ran": cleanup_ran}
+    except Exception as exc:
         logger.exception("Polling cycle failed")
+        scheduler_state.mark_job_failure("polling", str(exc))
         db.rollback()
         return {"ok": False, "reason": "exception", "processed": 0}
     finally:
