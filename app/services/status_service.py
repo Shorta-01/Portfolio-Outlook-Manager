@@ -3,16 +3,17 @@ from sqlalchemy.orm import Session
 
 from app.models.asset import AssetMode
 from app.repositories.asset_repo import AssetRepository
+from app.repositories.fx_rate_repo import FXRateRepository
+from app.repositories.lot_repo import LotRepository
 from app.repositories.market_quote_repo import MarketQuoteRepository
+from app.repositories.outlook_snapshot_repo import OutlookSnapshotRepository
 from app.repositories.polling_rule_repo import PollingRuleRepository
 from app.repositories.settings_repo import SettingsRepository
-from app.repositories.outlook_snapshot_repo import OutlookSnapshotRepository
 from app.scheduler.engine import scheduler_running
-from app.services.scheduler_state import scheduler_state
 from app.services.dashboard_service import DashboardService
+from app.services.outlook_evaluation_service import OutlookEvaluationService
+from app.services.scheduler_state import scheduler_state
 from app.services.valuation_service import ValuationService
-from app.repositories.lot_repo import LotRepository
-from app.repositories.fx_rate_repo import FXRateRepository
 
 
 class StatusService:
@@ -24,6 +25,7 @@ class StatusService:
         self.settings_repo = SettingsRepository(db)
         self.dashboard_service = DashboardService(db)
         self.outlook_repo = OutlookSnapshotRepository(db)
+        self.outlook_eval_service = OutlookEvaluationService(db)
         self.valuation_service = ValuationService(LotRepository(db), MarketQuoteRepository(db), FXRateRepository(db))
 
     def database_reachable(self) -> bool:
@@ -53,6 +55,7 @@ class StatusService:
         base_currency = settings.portfolio_base_currency if settings else "EUR"
         summary = self.dashboard_service.summary_cards()
         owned_rows = self.dashboard_service.owned_rows()
+        eval_scorecard = self.outlook_eval_service.global_scorecard()
         return {
             "app_status": "ok",
             "database_reachable": self.database_reachable(),
@@ -79,4 +82,12 @@ class StatusService:
             "assets_with_outlook_count": sum(1 for asset in self.asset_repo.list_all() if self.outlook_repo.get_latest_by_asset(asset.id) is not None),
             "assets_without_outlook_count": sum(1 for asset in self.asset_repo.list_all() if self.outlook_repo.get_latest_by_asset(asset.id) is None),
             "last_successful_outlook_run_utc": scheduler_state.last_successful_outlook_run_utc,
+            "total_outlook_snapshots": eval_scorecard["total_outlook_snapshots"],
+            "total_evaluated_outlooks": eval_scorecard["total_evaluated"],
+            "global_short_term_hit_rate": eval_scorecard["accuracy"]["short"]["hit_rate"],
+            "global_medium_term_hit_rate": eval_scorecard["accuracy"]["medium"]["hit_rate"],
+            "global_confidence_bucket_stats": eval_scorecard["confidence"],
+            "last_successful_outlook_evaluation_run_utc": scheduler_state.last_successful_outlook_evaluation_run_utc,
+            "evaluated_outlook_count": scheduler_state.evaluated_outlook_count,
+            "unevaluated_outlook_count": scheduler_state.unevaluated_outlook_count,
         }

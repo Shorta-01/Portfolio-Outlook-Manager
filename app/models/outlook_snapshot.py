@@ -23,6 +23,7 @@ class OutlookSnapshot(Base):
     model_version: Mapped[str] = mapped_column(String(64), nullable=False)
 
     asset = relationship("Asset", back_populates="outlook_snapshots")
+    evaluations = relationship("OutlookEvaluation", back_populates="outlook_snapshot", cascade="all, delete-orphan")
 
 
 Index("ix_outlook_snapshots_asset_id", OutlookSnapshot.asset_id)

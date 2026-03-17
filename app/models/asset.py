@@ -63,3 +63,4 @@ class Asset(Base):
     market_quotes = relationship("MarketQuote", back_populates="asset", cascade="all, delete-orphan")
     outlook_snapshots = relationship("OutlookSnapshot", back_populates="asset", cascade="all, delete-orphan")
     action_snapshots = relationship("ActionSnapshot", back_populates="asset", cascade="all, delete-orphan")
+    outlook_evaluations = relationship("OutlookEvaluation", back_populates="asset", cascade="all, delete-orphan")

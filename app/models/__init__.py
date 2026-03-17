@@ -7,6 +7,7 @@ from app.models.market_quote import MarketQuote
 from app.models.market_quote_raw import MarketQuoteRaw
 from app.models.polling_rule import PollingRule
 from app.models.outlook_snapshot import OutlookSnapshot
+from app.models.outlook_evaluation import OutlookEvaluation
 
 __all__ = [
     "Asset",
@@ -20,4 +21,5 @@ __all__ = [
     "MarketQuote",
     "FXRate",
     "OutlookSnapshot",
+    "OutlookEvaluation",
 ]

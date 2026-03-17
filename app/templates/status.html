@@ -25,11 +25,23 @@
 <li>Assets with outlook count: {{status.assets_with_outlook_count}}</li>
 <li>Assets without outlook count: {{status.assets_without_outlook_count}}</li>
 <li>Last successful outlook run UTC: {{status.last_successful_outlook_run_utc or "—"}}</li>
+
+<li>Total outlook snapshots: {{status.total_outlook_snapshots}}</li>
+<li>Total evaluated outlooks: {{status.total_evaluated_outlooks}}</li>
+<li>Global short-term hit rate: {{ '%.2f'|format((status.global_short_term_hit_rate or 0) * 100) if status.global_short_term_hit_rate is not none else '—' }}%</li>
+<li>Global medium-term hit rate: {{ '%.2f'|format((status.global_medium_term_hit_rate or 0) * 100) if status.global_medium_term_hit_rate is not none else '—' }}%</li>
+<li>Last successful outlook evaluation run UTC: {{status.last_successful_outlook_evaluation_run_utc or '—'}}</li>
+<li>Evaluated outlook count (last run): {{status.evaluated_outlook_count}}</li>
+<li>Unevaluated outlook count: {{status.unevaluated_outlook_count}}</li>
+{% if status.global_confidence_bucket_stats %}<li>Hit rate by confidence bucket:<ul>{% for row in status.global_confidence_bucket_stats %}<li>{{ row.confidence_bucket }}: {{ '%.2f'|format((row.hit_rate or 0) * 100) if row.hit_rate is not none else '—' }}% ({{ row.hits }}/{{ row.judged_total }}, neutral={{ row.neutral }})</li>{% endfor %}</ul></li>{% endif %}
 </ul>
 <form method="post" action="/admin/polling/run-once">
   <button type="submit">Run polling once</button>
 </form>
 <form method="post" action="/admin/outlook/run-once">
   <button type="submit">Run outlook once</button>
+</form>
+<form method="post" action="/admin/outlook/evaluate-run-once">
+  <button type="submit">Run outlook evaluation once</button>
 </form>
 {% endblock %}
