@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -18,3 +20,10 @@ class PollingRuleRepository:
 
     def count(self) -> int:
         return len(self.list_all())
+
+    def list_due(self, now_utc: datetime) -> list[PollingRule]:
+        stmt = select(PollingRule).where(
+            PollingRule.enabled.is_(True),
+            (PollingRule.next_due_at_utc.is_(None)) | (PollingRule.next_due_at_utc <= now_utc),
+        )
+        return list(self.db.execute(stmt).scalars().all())

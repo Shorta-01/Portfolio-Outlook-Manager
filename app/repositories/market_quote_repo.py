@@ -1,3 +1,6 @@
+from datetime import datetime
+from decimal import Decimal
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -38,3 +41,42 @@ class MarketQuoteRepository:
 
     def has_quote_for_asset(self, asset_id: int) -> bool:
         return self.latest_for_asset(asset_id) is not None
+
+    def find_duplicate_normalized(
+        self,
+        *,
+        asset_id: int,
+        provider_name: str,
+        provider_timestamp_utc: datetime,
+        price: Decimal,
+        quote_currency: str,
+        interval_type: str,
+    ) -> MarketQuote | None:
+        stmt = select(MarketQuote).where(
+            MarketQuote.asset_id == asset_id,
+            MarketQuote.provider_name == provider_name,
+            MarketQuote.provider_timestamp_utc == provider_timestamp_utc,
+            MarketQuote.price == price,
+            MarketQuote.quote_currency == quote_currency,
+            MarketQuote.interval_type == interval_type,
+        )
+        return self.db.execute(stmt).scalar_one_or_none()
+
+    def find_duplicate_raw(
+        self,
+        *,
+        asset_id: int,
+        provider_name: str,
+        provider_symbol: str,
+        provider_timestamp_utc: datetime,
+    ) -> MarketQuoteRaw | None:
+        stmt = select(MarketQuoteRaw).where(
+            MarketQuoteRaw.asset_id == asset_id,
+            MarketQuoteRaw.provider_name == provider_name,
+            MarketQuoteRaw.provider_symbol == provider_symbol,
+            MarketQuoteRaw.provider_timestamp_utc == provider_timestamp_utc,
+        )
+        return self.db.execute(stmt).scalar_one_or_none()
+
+    def count_rows(self) -> int:
+        return len(self.db.execute(select(MarketQuote.id)).scalars().all())

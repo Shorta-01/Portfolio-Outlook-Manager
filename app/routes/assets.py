@@ -7,6 +7,7 @@ from app.dependencies import get_db_session
 from app.models.asset import AssetMode, AssetType
 from app.schemas.asset import AssetCreate
 from app.services.asset_detail_service import AssetDetailService
+from app.services.history_service import HistoryService
 from app.services.instrument_service import InstrumentService
 
 router = APIRouter(prefix="/assets")
@@ -60,3 +61,9 @@ def asset_detail(asset_id: int, request: Request, db: Session = Depends(get_db_s
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return templates.TemplateResponse("asset_detail.html", {"request": request, **model})
+
+
+@router.post("/{asset_id}/backfill")
+def backfill_asset(asset_id: int, db: Session = Depends(get_db_session)):
+    HistoryService(db).backfill_asset_by_id(asset_id)
+    return RedirectResponse(url=f"/assets/{asset_id}", status_code=303)

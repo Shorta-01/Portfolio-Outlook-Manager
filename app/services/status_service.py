@@ -6,6 +6,8 @@ from app.repositories.asset_repo import AssetRepository
 from app.repositories.market_quote_repo import MarketQuoteRepository
 from app.repositories.polling_rule_repo import PollingRuleRepository
 from app.repositories.settings_repo import SettingsRepository
+from app.scheduler.engine import scheduler_running
+from app.services.scheduler_state import scheduler_state
 from app.services.dashboard_service import DashboardService
 from app.services.valuation_service import ValuationService
 from app.repositories.lot_repo import LotRepository
@@ -55,7 +57,8 @@ class StatusService:
             "settings_present": settings is not None,
             "asset_counts": self.asset_repo.count_by_mode(),
             "polling_rule_count": self.polling_repo.count(),
-            "scheduler_status": "placeholder",
+            "scheduler_status": "running" if scheduler_running() else "stopped",
+            "scheduler_running": scheduler_running(),
             "provider_freshness": "active",
             "assets_with_latest_quote": latest_quote_count,
             "assets_stale_or_unknown_prices": stale_or_unknown,
@@ -65,4 +68,10 @@ class StatusService:
             "missing_fx_asset_count": summary.missing_fx_asset_count,
             "missing_quote_asset_count": summary.missing_quote_asset_count,
             "base_currency": base_currency,
+            "last_successful_poll_utc": scheduler_state.last_successful_poll_utc,
+            "last_successful_backfill_utc": scheduler_state.last_successful_backfill_utc,
+            "assets_with_history_count": sum(1 for asset in self.asset_repo.list_all() if self.quote_repo.has_quote_for_asset(asset.id)),
+            "assets_without_history_count": sum(1 for asset in self.asset_repo.list_all() if not self.quote_repo.has_quote_for_asset(asset.id)),
+            "quote_rows_count": self.quote_repo.count_rows(),
+            "fx_rows_count": FXRateRepository(self.db).count_rows(),
         }

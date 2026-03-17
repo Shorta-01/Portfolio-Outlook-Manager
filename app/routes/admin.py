@@ -9,6 +9,7 @@ from app.dependencies import get_db_session
 from app.repositories.asset_repo import AssetRepository
 from app.schemas.quote_fx import FXRateCreate, MarketQuoteCreate
 from app.services.market_data_admin_service import MarketDataAdminService
+from app.scheduler.jobs import run_polling_cycle
 
 router = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory="app/templates")
@@ -66,4 +67,10 @@ def create_fx(
             provider_timestamp_utc=provider_timestamp_utc,
         )
     )
+    return RedirectResponse(url="/status", status_code=303)
+
+
+@router.post("/polling/run-once")
+def run_polling_once(db: Session = Depends(get_db_session)):
+    run_polling_cycle(db)
     return RedirectResponse(url="/status", status_code=303)

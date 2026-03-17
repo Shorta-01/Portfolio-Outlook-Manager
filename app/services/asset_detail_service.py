@@ -13,6 +13,7 @@ class AssetDetailService:
     def __init__(self, db: Session):
         self.asset_repo = AssetRepository(db)
         self.lot_repo = LotRepository(db)
+        self.quote_repo = MarketQuoteRepository(db)
         self.settings_repo = SettingsRepository(db)
         self.valuation_service = ValuationService(self.lot_repo, MarketQuoteRepository(db), FXRateRepository(db))
 
@@ -49,4 +50,5 @@ class AssetDetailService:
             "is_watchlist": asset.asset_mode == AssetMode.WATCHLIST,
             "is_cash": asset.asset_mode == AssetMode.CASH or asset.asset_type == AssetType.CASH,
             "is_term_deposit": asset.asset_mode == AssetMode.TERM_DEPOSIT or asset.asset_type == AssetType.TERM_DEPOSIT,
+            "recent_quotes": self.quote_repo.recent_for_asset(asset.id, limit=15),
         }
