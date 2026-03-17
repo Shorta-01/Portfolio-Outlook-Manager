@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from urllib.parse import quote_plus
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -75,20 +76,32 @@ def create_fx(
 
 @router.post("/polling/run-once")
 def run_polling_once(db: Session = Depends(get_db_session)):
-    run_polling_cycle(db)
-    return RedirectResponse(url="/status", status_code=303)
+    try:
+        run_polling_cycle(db)
+        message = "Polling run completed."
+    except Exception:
+        message = "Polling run failed. Check provider configuration and symbol mapping."
+    return RedirectResponse(url=f"/status?message={quote_plus(message)}", status_code=303)
 
 
 @router.post("/outlook/run-once")
 def run_outlook_once(db: Session = Depends(get_db_session)):
-    OutlookService(db).run_once_for_eligible_assets()
-    return RedirectResponse(url="/status", status_code=303)
+    try:
+        OutlookService(db).run_once_for_eligible_assets()
+        message = "Outlook run completed."
+    except Exception:
+        message = "Outlook run failed. Ensure assets have enough history."
+    return RedirectResponse(url=f"/status?message={quote_plus(message)}", status_code=303)
 
 
 @router.post("/outlook/evaluate-run-once")
 def run_outlook_evaluate_once(db: Session = Depends(get_db_session)):
-    result = OutlookEvaluationService(db).run_once()
-    scheduler_state.last_successful_outlook_evaluation_run_utc = datetime.utcnow()
-    scheduler_state.evaluated_outlook_count = result["evaluated_outlook_count"]
-    scheduler_state.unevaluated_outlook_count = result["unevaluated_outlook_count"]
-    return RedirectResponse(url="/status", status_code=303)
+    try:
+        result = OutlookEvaluationService(db).run_once()
+        scheduler_state.last_successful_outlook_evaluation_run_utc = datetime.utcnow()
+        scheduler_state.evaluated_outlook_count = result["evaluated_outlook_count"]
+        scheduler_state.unevaluated_outlook_count = result["unevaluated_outlook_count"]
+        message = "Outlook evaluation completed."
+    except Exception:
+        message = "Outlook evaluation failed. Verify quote history coverage."
+    return RedirectResponse(url=f"/status?message={quote_plus(message)}", status_code=303)

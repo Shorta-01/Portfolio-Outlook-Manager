@@ -1,47 +1,21 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Status</h2>
+{% if message %}<p class="notice">{{message}}</p>{% endif %}
+<div class="cards">
+  <div class="card"><h3>Scheduler</h3><p>State: {{status.scheduler_status}}</p><p>Last poll: {{status.last_successful_poll_utc or '—'}}</p><p>Last backfill: {{status.last_successful_backfill_utc or '—'}}</p><p>Last outlook: {{status.last_successful_outlook_run_utc or '—'}}</p><p>Last evaluation: {{status.last_successful_outlook_evaluation_run_utc or '—'}}</p></div>
+  <div class="card"><h3>Data coverage</h3><p>Quote rows: {{status.quote_rows_count}}</p><p>FX rows: {{status.fx_rows_count}}</p><p>Assets without history: {{status.assets_without_history_count}}</p><p>Totals complete: {{status.totals_complete}}</p></div>
+</div>
 <ul>
-<li>App: {{status.app_status}}</li>
-<li>Database reachable: {{status.database_reachable}}</li>
-<li>Settings present: {{status.settings_present}}</li>
-<li>Polling rule count: {{status.polling_rule_count}}</li>
-<li>Scheduler: {{status.scheduler_status}}</li>
-<li>Scheduler running: {{status.scheduler_running}}</li>
-<li>Last successful poll UTC: {{status.last_successful_poll_utc or '—'}}</li>
-<li>Last successful backfill UTC: {{status.last_successful_backfill_utc or '—'}}</li>
 <li>Assets with latest quote: {{status.assets_with_latest_quote}}</li>
 <li>Assets stale/unknown: {{status.assets_stale_or_unknown_prices}}</li>
 <li>Assets without quote data: {{status.assets_without_quote_data}}</li>
 <li>Assets missing FX for base valuation: {{status.assets_missing_fx_for_base_valuation}}</li>
-<li>Totals complete: {{status.totals_complete}}</li>
-<li>Missing FX asset count: {{status.missing_fx_asset_count}}</li>
-<li>Missing quote asset count: {{status.missing_quote_asset_count}}</li>
-<li>Base currency: {{status.base_currency}}</li>
-<li>Assets with history count: {{status.assets_with_history_count}}</li>
-<li>Assets without history count: {{status.assets_without_history_count}}</li>
-<li>Quote rows count: {{status.quote_rows_count}}</li>
-<li>FX rows count: {{status.fx_rows_count}}</li>
-<li>Assets with outlook count: {{status.assets_with_outlook_count}}</li>
-<li>Assets without outlook count: {{status.assets_without_outlook_count}}</li>
-<li>Last successful outlook run UTC: {{status.last_successful_outlook_run_utc or "—"}}</li>
-
-<li>Total outlook snapshots: {{status.total_outlook_snapshots}}</li>
-<li>Total evaluated outlooks: {{status.total_evaluated_outlooks}}</li>
-<li>Global short-term hit rate: {{ '%.2f'|format((status.global_short_term_hit_rate or 0) * 100) if status.global_short_term_hit_rate is not none else '—' }}%</li>
-<li>Global medium-term hit rate: {{ '%.2f'|format((status.global_medium_term_hit_rate or 0) * 100) if status.global_medium_term_hit_rate is not none else '—' }}%</li>
-<li>Last successful outlook evaluation run UTC: {{status.last_successful_outlook_evaluation_run_utc or '—'}}</li>
-<li>Evaluated outlook count (last run): {{status.evaluated_outlook_count}}</li>
-<li>Unevaluated outlook count: {{status.unevaluated_outlook_count}}</li>
-{% if status.global_confidence_bucket_stats %}<li>Hit rate by confidence bucket:<ul>{% for row in status.global_confidence_bucket_stats %}<li>{{ row.confidence_bucket }}: {{ '%.2f'|format((row.hit_rate or 0) * 100) if row.hit_rate is not none else '—' }}% ({{ row.hits }}/{{ row.judged_total }}, neutral={{ row.neutral }})</li>{% endfor %}</ul></li>{% endif %}
 </ul>
-<form method="post" action="/admin/polling/run-once">
-  <button type="submit">Run polling once</button>
-</form>
-<form method="post" action="/admin/outlook/run-once">
-  <button type="submit">Run outlook once</button>
-</form>
-<form method="post" action="/admin/outlook/evaluate-run-once">
-  <button type="submit">Run outlook evaluation once</button>
-</form>
+<h3>Manual operations</h3>
+<form method="post" action="/admin/polling/run-once"><button type="submit">Run polling once</button></form>
+<form method="post" action="/admin/outlook/run-once"><button type="submit">Run outlook once</button></form>
+<form method="post" action="/admin/outlook/evaluate-run-once"><button type="submit">Run outlook evaluation once</button></form>
+<form method="post" action="/exports/backup-db"><button type="submit">Create SQLite backup copy</button></form>
+<p><a href="/exports/portfolio.csv">Portfolio CSV</a> · <a href="/exports/watchlist.csv">Watchlist CSV</a> · <a href="/exports/portfolio-lots.csv">Lots CSV</a></p>
 {% endblock %}

@@ -60,10 +60,20 @@ def asset_detail(asset_id: int, request: Request, db: Session = Depends(get_db_s
         model = service.build(asset_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return templates.TemplateResponse("asset_detail.html", {"request": request, **model})
+    return templates.TemplateResponse("asset_detail.html", {"request": request, **model, "message": request.query_params.get("message")})
 
 
 @router.post("/{asset_id}/backfill")
 def backfill_asset(asset_id: int, db: Session = Depends(get_db_session)):
-    HistoryService(db).backfill_asset_by_id(asset_id)
-    return RedirectResponse(url=f"/assets/{asset_id}", status_code=303)
+    try:
+        HistoryService(db).backfill_asset_by_id(asset_id)
+        message = "History backfill started successfully."
+    except Exception:
+        message = "Backfill failed. Check provider settings and symbol resolution."
+    return RedirectResponse(url=f"/assets/{asset_id}?message={message}", status_code=303)
+
+
+@router.post("/{asset_id}/promote")
+def promote_watchlist_asset(asset_id: int, db: Session = Depends(get_db_session)):
+    InstrumentService(db).promote_watchlist_to_owned(asset_id)
+    return RedirectResponse(url=f"/assets/{asset_id}?message=Asset promoted to owned. Add at least one lot to include it in position math.", status_code=303)
