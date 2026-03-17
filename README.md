@@ -1,22 +1,36 @@
 # Portfolio Outlook Manager
 
-Portfolio Outlook Manager is a Python-first portfolio-aware decision platform. Milestone 1 provides foundational data model, routing, and server-rendered UI shells for owned positions and watchlist.
+Portfolio Outlook Manager is a FastAPI + Jinja application for owned portfolio and watchlist tracking with deterministic asset identity, lot-based valuation, manual quote/FX management, and now a first market-data ingestion lifecycle.
 
-## Milestone 1 scope
-- FastAPI + Jinja app shell
-- SQLite + SQLAlchemy 2.x models
-- Owned portfolio aggregation by asset (lot-based)
-- Separate watchlist
-- Asset and lot creation
-- CSV import for owned/watchlist flows
-- Settings, status, and health pages
+## Current implemented scope (through Milestone 3)
+- FastAPI + Jinja server-rendered app
+- SQLite + SQLAlchemy 2.x persistence
+- Owned dashboard + watchlist
+- Lot-based aggregation and valuation
+- CSV import for owned/watchlist assets
+- Deterministic asset identity reuse
+- Cash + term-deposit valuation support
+- Manual quote and FX entry flows
+- Status page trust and completeness signals
+- Provider abstraction and symbol resolution
+- Historical backfill (daily) for market-priced assets
+- Unified ingestion path for raw + normalized quotes and FX rows
+- APScheduler polling coordinator (central run, every minute)
+- Asset-detail recent stored quote history
+- Status metadata for scheduler/history coverage
 
-## Setup
+## Milestone 3 setup
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env  # optional if you keep env vars in a file
 ```
+
+Environment variables (optional):
+- `DATABASE_URL` (default `sqlite:///./portfolio.db`)
+- `TWELVE_DATA_API_KEY` (required for Twelve Data external ingestion)
+- `SCHEDULER_ENABLED` (`true` by default)
 
 ## Initialize DB
 ```bash
@@ -27,6 +41,11 @@ python scripts/init_db.py
 ```bash
 uvicorn app.main:app --reload
 ```
+
+## Milestone 3 operational flows
+- Backfill one asset: `POST /assets/{asset_id}/backfill`
+- Run one polling cycle manually: `POST /admin/polling/run-once`
+- View scheduler/history metadata: `GET /status`
 
 ## Run tests
 ```bash

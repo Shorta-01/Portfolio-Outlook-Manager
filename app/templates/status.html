@@ -7,6 +7,9 @@
 <li>Settings present: {{status.settings_present}}</li>
 <li>Polling rule count: {{status.polling_rule_count}}</li>
 <li>Scheduler: {{status.scheduler_status}}</li>
+<li>Scheduler running: {{status.scheduler_running}}</li>
+<li>Last successful poll UTC: {{status.last_successful_poll_utc or '—'}}</li>
+<li>Last successful backfill UTC: {{status.last_successful_backfill_utc or '—'}}</li>
 <li>Assets with latest quote: {{status.assets_with_latest_quote}}</li>
 <li>Assets stale/unknown: {{status.assets_stale_or_unknown_prices}}</li>
 <li>Assets without quote data: {{status.assets_without_quote_data}}</li>
@@ -15,5 +18,12 @@
 <li>Missing FX asset count: {{status.missing_fx_asset_count}}</li>
 <li>Missing quote asset count: {{status.missing_quote_asset_count}}</li>
 <li>Base currency: {{status.base_currency}}</li>
+<li>Assets with history count: {{status.assets_with_history_count}}</li>
+<li>Assets without history count: {{status.assets_without_history_count}}</li>
+<li>Quote rows count: {{status.quote_rows_count}}</li>
+<li>FX rows count: {{status.fx_rows_count}}</li>
 </ul>
+<form method="post" action="/admin/polling/run-once">
+  <button type="submit">Run polling once</button>
+</form>
 {% endblock %}

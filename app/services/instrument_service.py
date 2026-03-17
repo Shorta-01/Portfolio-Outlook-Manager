@@ -9,6 +9,7 @@ from app.repositories.polling_rule_repo import PollingRuleRepository
 from app.repositories.settings_repo import SettingsRepository
 from app.schemas.asset import AssetCreate
 from app.services.asset_identity_service import AssetIdentityService
+from app.services.history_service import HistoryService
 
 POLL_CAPABLE_TYPES = {
     AssetType.STOCK,
@@ -34,6 +35,9 @@ class InstrumentService:
     def create_asset(self, payload: AssetCreate) -> Asset:
         asset, _ = self.create_or_reuse_asset(payload)
         return asset
+
+    def trigger_backfill(self, asset_id: int) -> dict:
+        return HistoryService(self.db).backfill_asset_by_id(asset_id)
 
     def create_or_reuse_asset(self, payload: AssetCreate) -> tuple[Asset, bool]:
         existing = self.find_by_identity(payload)

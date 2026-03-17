@@ -3,6 +3,9 @@
 <h2>{{asset.display_name}}</h2>
 <div class="card"><p>{{asset.asset_type.value}} / {{asset.asset_mode.value}} / {{asset.quote_currency}}</p>
 <p>ISIN: {{asset.isin or '—'}}</p>
+<form method="post" action="/assets/{{asset.id}}/backfill" style="margin: 8px 0;">
+  <button type="submit">Backfill history</button>
+</form>
 {% if is_owned %}<p>Quantity {{aggregate.total_quantity}} | Average buy price {{aggregate.weighted_avg_buy_price_ex_fees}} | Current price {{aggregate.current_price if aggregate.current_price is not none else '—'}}</p>
 <p>Value at buy {{aggregate.total_invested_value_including_fees}} | Value now {{aggregate.value_now if aggregate.has_base_value else '—'}} | P/L {{aggregate.unrealized_pl_amount if aggregate.has_base_value else '—'}} ({{aggregate.unrealized_pl_percent if aggregate.has_base_value and aggregate.unrealized_pl_percent is not none else '—'}})</p>
 <p>Quote-side value {{aggregate.value_now_quote_currency if aggregate.value_now_quote_currency is not none else '—'}} {{asset.quote_currency}} | Base currency {{base_currency}}</p>
@@ -15,4 +18,17 @@
 </div>
 {% include 'components/tabs.html' %}
 {% if is_owned %}{% include 'components/lot_table.html' %}{% endif %}
+<h3>Recent stored history</h3>
+{% if recent_quotes %}
+<table>
+  <thead><tr><th>Time (UTC)</th><th>Price</th><th>Currency</th><th>Provider</th><th>Interval</th></tr></thead>
+  <tbody>
+  {% for q in recent_quotes %}
+    <tr><td>{{q.provider_timestamp_utc}}</td><td>{{q.price}}</td><td>{{q.quote_currency}}</td><td>{{q.provider_name}}</td><td>{{q.interval_type}}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No stored history yet.</p>
+{% endif %}
 {% endblock %}
