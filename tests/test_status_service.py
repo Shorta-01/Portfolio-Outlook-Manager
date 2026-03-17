@@ -37,3 +37,11 @@ def test_status_reports_missing_quote_and_fx_counts(db_session):
     assert status["totals_complete"] is False
     assert status["missing_fx_asset_count"] == 1
     assert status["missing_quote_asset_count"] == 1
+
+
+def test_status_runtime_and_backup_metadata_keys(db_session):
+    status = StatusService(db_session).build()
+    assert "last_successful_cleanup_run_utc" in status
+    assert "latest_backup_timestamp_utc" in status
+    assert "latest_backup_path" in status
+    assert "incomplete_valuation_count" in status

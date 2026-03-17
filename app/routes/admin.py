@@ -1,19 +1,19 @@
 from datetime import datetime, timezone
+from urllib.parse import quote_plus
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from urllib.parse import quote_plus
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db_session
 from app.repositories.asset_repo import AssetRepository
-from app.schemas.quote_fx import FXRateCreate, MarketQuoteCreate
-from app.services.market_data_admin_service import MarketDataAdminService
 from app.scheduler.jobs import run_polling_cycle
-from app.services.outlook_service import OutlookService
+from app.schemas.quote_fx import FXRateCreate, MarketQuoteCreate
+from app.services.cleanup_service import CleanupService
+from app.services.market_data_admin_service import MarketDataAdminService
 from app.services.outlook_evaluation_service import OutlookEvaluationService
-from app.services.scheduler_state import scheduler_state
+from app.services.outlook_service import OutlookService
 
 router = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory="app/templates")
@@ -97,11 +97,18 @@ def run_outlook_once(db: Session = Depends(get_db_session)):
 @router.post("/outlook/evaluate-run-once")
 def run_outlook_evaluate_once(db: Session = Depends(get_db_session)):
     try:
-        result = OutlookEvaluationService(db).run_once()
-        scheduler_state.last_successful_outlook_evaluation_run_utc = datetime.utcnow()
-        scheduler_state.evaluated_outlook_count = result["evaluated_outlook_count"]
-        scheduler_state.unevaluated_outlook_count = result["unevaluated_outlook_count"]
+        OutlookEvaluationService(db).run_once()
         message = "Outlook evaluation completed."
     except Exception:
         message = "Outlook evaluation failed. Verify quote history coverage."
+    return RedirectResponse(url=f"/status?message={quote_plus(message)}", status_code=303)
+
+
+@router.post("/cleanup/run-once")
+def run_cleanup_once(db: Session = Depends(get_db_session)):
+    try:
+        result = CleanupService(db).run_once()
+        message = f"Cleanup completed. Removed {sum(result.removed.values())} rows."
+    except Exception:
+        message = "Cleanup failed."
     return RedirectResponse(url=f"/status?message={quote_plus(message)}", status_code=303)

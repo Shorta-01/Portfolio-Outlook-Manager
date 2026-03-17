@@ -1,76 +1,71 @@
 # Portfolio Outlook Manager
 
-Portfolio Outlook Manager is a lightweight FastAPI + Jinja application for day-to-day portfolio operations.
+Portfolio Outlook Manager is a FastAPI + Jinja application for portfolio operations with polling, outlook generation, evaluation, alerts, cleanup retention, and backup workflows.
 
-## Milestone 5 highlights
-- Usability-focused owned portfolio table (search, sort, filter, incomplete-only view)
-- Usability-focused watchlist table (search, sort, filter)
-- Watchlist-to-owned promotion flow (identity preserved, lots still required for position math)
-- Improved import feedback (clear totals + row-level errors)
-- CSV export routes for portfolio, lots, and watchlist
-- SQLite backup copy action from Status page
-- Refined asset detail hierarchy and clearer empty/error states
-- Compact operational status surface for scheduler + data completeness
+## Implemented feature set
+- Portfolio dashboard (owned + watchlist), lots, cash, term deposits.
+- Provider abstraction (manual + Twelve Data fallback), backfill, and polling coordinator.
+- Outlook engine, action layer, evaluation/calibration, refined ensemble outputs.
+- Search/filter/sort/export across dashboard/watchlist.
+- Alert rules + in-app alert events.
+- Operational status page with runtime, data coverage, outlook quality, and manual operations.
+- Retention cleanup service with safe pruning guardrails.
+- SQLite backup workflow with latest backup metadata surfaced on `/status`.
 
-## Requirements
-- Python 3.11+
-- SQLite (default)
-
-## First-run setup
+## Local setup
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env  # optional
 python scripts/init_db.py
+```
+
+## Run
+```bash
 uvicorn app.main:app --reload
 ```
 
+## Test
+```bash
+pytest
+```
+
 ## Environment variables
-- `DATABASE_URL` (default: `sqlite:///./portfolio.db`)
-- `TWELVE_DATA_API_KEY` (optional, needed for Twelve Data quote/fx ingestion)
-- `SCHEDULER_ENABLED` (`true` by default)
+- `DATABASE_URL` (default `sqlite:///./portfolio.db`)
+- `TWELVE_DATA_API_KEY` (optional)
+- `SCHEDULER_ENABLED` (`true` default)
+- `BACKUP_DIR` (`backups` default)
+- `RETENTION_RAW_QUOTES_DAYS` (default `30`)
+- `RETENTION_NORMALIZED_QUOTES_DAYS` (default `365`)
+- `RETENTION_FX_DAYS` (default `365`)
+- `RETENTION_OUTLOOK_SNAPSHOTS_DAYS` (default `365`)
+- `RETENTION_ACTION_SNAPSHOTS_DAYS` (default `365`)
+- `RETENTION_OUTLOOK_EVALUATIONS_DAYS` (default `730`)
+- `RETENTION_ALERT_EVENTS_DAYS` (default `180`)
 
-## Main workflows
-- Dashboard: `GET /` (supports query-param search/filter/sort)
-- Watchlist: `GET /watchlist` (supports query-param search/filter/sort)
-- Import: `GET/POST /imports/csv`
-- Export portfolio: `GET /exports/portfolio.csv`
-- Export lots: `GET /exports/portfolio-lots.csv`
-- Export watchlist: `GET /exports/watchlist.csv`
-- Backup SQLite copy: `POST /exports/backup-db`
-- Status + manual operations: `GET /status`
+## First-run checklist
+1. Initialize DB (`python scripts/init_db.py`).
+2. Add assets and lots (or import CSV).
+3. Backfill history per asset from asset detail page.
+4. Open `/status` and run: polling, outlook, evaluation, alerts.
+5. Verify data coverage (quote/FX) and incomplete valuation counts.
 
-## CSV examples
-Owned import columns:
-`display_name,asset_type,quote_currency,exchange,isin,quantity,buy_price,buy_currency,buy_date,fees,notes`
+## Backup procedure
+- UI route: `/status` → **Create backup**.
+- API route: `POST /exports/backup-db`.
+- Backups are timestamped SQLite files in `BACKUP_DIR`.
+- `/status` shows latest backup timestamp and path.
 
-Example:
-```csv
-display_name,asset_type,quote_currency,exchange,isin,quantity,buy_price,buy_currency,buy_date,fees,notes
-Apple,stock,USD,NASDAQ,US0378331005,2,180,USD,2024-01-05,1.00,starter lot
-```
+## Restore procedure (manual, safe)
+1. Stop the app/service.
+2. Copy selected backup over active SQLite DB file.
+3. Start app/service.
+4. Check `/status` for scheduler and row-count sanity.
 
-Watchlist import columns:
-`display_name,asset_type,quote_currency,exchange,isin,notes`
+## Raspberry Pi deployment
+See `docs/raspberry_pi_runbook.md` for a concise runbook.
 
-Example:
-```csv
-display_name,asset_type,quote_currency,exchange,isin,notes
-iShares Core MSCI World,etf,EUR,XETRA,IE00B4L5Y983,long-term candidate
-```
-
-## Backup and restore
-- Create backup copy in UI from `/status` (writes timestamped file under `./backups`).
-- Restore manually by stopping app and replacing `portfolio.db` with selected backup file.
-
-## Raspberry Pi deployment notes
-1. Use Python 3.11 and a virtual environment.
-2. Keep `SCHEDULER_ENABLED=true` only on one instance.
-3. Prefer local SSD/fast SD and periodic backups (`/exports/backup-db`).
-4. Run with `uvicorn` behind a lightweight reverse proxy.
-
-## systemd service example
+### systemd example
 ```ini
 [Unit]
 Description=Portfolio Outlook Manager
@@ -82,6 +77,7 @@ WorkingDirectory=/home/pi/Portfolio-Outlook-Manager
 Environment="DATABASE_URL=sqlite:////home/pi/Portfolio-Outlook-Manager/portfolio.db"
 Environment="TWELVE_DATA_API_KEY=YOUR_KEY"
 Environment="SCHEDULER_ENABLED=true"
+Environment="BACKUP_DIR=/home/pi/Portfolio-Outlook-Manager/backups"
 ExecStart=/home/pi/Portfolio-Outlook-Manager/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
 Restart=always
 
@@ -89,7 +85,8 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-## Tests
-```bash
-pytest
-```
+## Troubleshooting
+- **Missing quote**: confirm provider symbol/ISIN, run manual polling, and verify asset is not cash/term deposit.
+- **Missing FX**: check quote currency vs base currency; run polling/backfill for FX-bearing assets.
+- **Scheduler not running**: verify `SCHEDULER_ENABLED=true`, dependency install, and `/status` scheduler block.
+- **Totals incomplete**: inspect missing quote/FX counts on `/status`, resolve data gaps, rerun outlook/evaluation.

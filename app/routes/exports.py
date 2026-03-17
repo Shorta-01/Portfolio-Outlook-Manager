@@ -1,3 +1,5 @@
+from urllib.parse import quote_plus
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -25,5 +27,5 @@ def export_watchlist_csv(db: Session = Depends(get_db_session)):
 
 @router.post('/backup-db')
 def backup_database(db: Session = Depends(get_db_session)):
-    ExportService(db).create_sqlite_backup()
-    return RedirectResponse(url='/status', status_code=303)
+    target = ExportService(db).create_sqlite_backup()
+    return RedirectResponse(url=f"/status?message={quote_plus(f'Backup created: {target}')}", status_code=303)
