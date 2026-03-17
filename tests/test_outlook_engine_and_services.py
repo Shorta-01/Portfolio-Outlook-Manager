@@ -1,9 +1,12 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 
+from app.forecasting.classical import arima_like_component, smoothing_component
+from app.forecasting.ensemble import run_ensemble
 from app.forecasting.scoring import score_to_outlook
 from app.forecasting.signals import build_signals
 from app.forecasting.types import QuotePoint
+from app.forecasting.volatility import evaluate_volatility
 from app.models.asset import AssetMode, AssetType
 from app.models.market_quote import MarketQuote
 from app.repositories.action_snapshot_repo import ActionSnapshotRepository
@@ -60,6 +63,54 @@ def test_insufficient_history_handling_lowers_confidence(db_session):
     assert outlook is not None
     assert outlook.confidence == "low"
 
+
+
+def test_smoothing_component_directional_behavior():
+    now = datetime.utcnow()
+    up_points = [QuotePoint(timestamp_utc=now - timedelta(hours=14 - i), price=100 + i) for i in range(14)]
+    down_points = [QuotePoint(timestamp_utc=now - timedelta(hours=14 - i), price=114 - i) for i in range(14)]
+    assert smoothing_component(up_points).short_score > 0
+    assert smoothing_component(down_points).short_score < 0
+
+
+def test_arima_component_graceful_disable_and_short_history():
+    now = datetime.utcnow()
+    points = [QuotePoint(timestamp_utc=now - timedelta(hours=8 - i), price=100 + i) for i in range(8)]
+    disabled = arima_like_component(points, enabled=False)
+    thin = arima_like_component(points, enabled=True)
+    assert disabled.status == "disabled"
+    assert thin.status == "insufficient_history"
+
+
+def test_volatility_component_instability_penalty_behavior():
+    now = datetime.utcnow()
+    stable = [QuotePoint(timestamp_utc=now - timedelta(hours=20 - i), price=100.0 + (i * 0.02)) for i in range(20)]
+    choppy = [QuotePoint(timestamp_utc=now - timedelta(hours=20 - i), price=(100.0 + (11 if i % 2 else -9))) for i in range(20)]
+    _, stable_penalty, _ = evaluate_volatility(stable)
+    _, choppy_penalty, _ = evaluate_volatility(choppy)
+    assert choppy_penalty > stable_penalty
+
+
+def test_ensemble_scores_bounded_and_diagnostics_present():
+    now = datetime.utcnow()
+    points = [QuotePoint(timestamp_utc=now - timedelta(hours=40 - i), price=100 + (i * 0.6)) for i in range(40)]
+    result = run_ensemble(points, now, evaluation_quality_penalty=0.2)
+    assert -1.0 <= result.short_term_score <= 1.0
+    assert -1.0 <= result.medium_term_score <= 1.0
+    assert result.model_version.startswith("m4.2")
+    assert "arima" in result.component_summary
+    assert result.volatility_state in {"low", "moderate", "high", "unknown"}
+
+
+def test_outlook_snapshot_stores_component_diagnostics(db_session):
+    asset = InstrumentService(db_session).create_asset(AssetCreate(display_name="Diag", asset_type=AssetType.STOCK, asset_mode=AssetMode.OWNED, quote_currency="EUR"))
+    _seed_quotes(db_session, asset.id, [str(100 + i) for i in range(30)])
+    OutlookService(db_session).run_once_for_eligible_assets()
+    snap = OutlookSnapshotRepository(db_session).get_latest_by_asset(asset.id)
+    assert snap is not None
+    assert "baseline" in snap.component_summary
+    assert snap.component_flags.startswith("{")
+    assert snap.volatility_state in {"low", "moderate", "high", "unknown"}
 
 def test_score_to_label_mapping():
     assert score_to_outlook(0.4) == "bullish"

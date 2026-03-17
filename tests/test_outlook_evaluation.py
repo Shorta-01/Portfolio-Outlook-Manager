@@ -134,3 +134,29 @@ def test_confidence_stats_asset_scorecard_and_status(db_session):
 def test_admin_outlook_evaluation_run_once_path(db_session):
     response = run_outlook_evaluate_once(db_session)
     assert response.status_code == 303
+
+
+def test_recent_quality_penalty_and_by_model_scorecard(db_session):
+    asset = InstrumentService(db_session).create_asset(AssetCreate(display_name="ModelCmp", asset_type=AssetType.STOCK, asset_mode=AssetMode.WATCHLIST, quote_currency="EUR"))
+    now = datetime.utcnow()
+    snapshots = [
+        OutlookSnapshot(asset_id=asset.id, timestamp_utc=now - timedelta(days=10), short_term_outlook="bullish", medium_term_outlook="bullish", confidence="high", urgency="low", reason_summary="r", risk_note="r", short_term_score=0.4, medium_term_score=0.4, model_version="m4-signal-ensemble-v1", component_flags="{}", component_summary="{}", model_diagnostic_note="", volatility_state="low"),
+        OutlookSnapshot(asset_id=asset.id, timestamp_utc=now - timedelta(days=11), short_term_outlook="bearish", medium_term_outlook="bearish", confidence="low", urgency="low", reason_summary="r", risk_note="r", short_term_score=-0.4, medium_term_score=-0.4, model_version="m4.2-refined-ensemble-v1", component_flags="{}", component_summary="{}", model_diagnostic_note="", volatility_state="high"),
+    ]
+    db_session.add_all(snapshots)
+    db_session.flush()
+
+    for snap in snapshots:
+        _q(db_session, asset.id, snap.timestamp_utc, "100")
+        _q(db_session, asset.id, snap.timestamp_utc + timedelta(hours=24), "90")
+        _q(db_session, asset.id, snap.timestamp_utc + timedelta(days=7), "90")
+    db_session.commit()
+
+    svc = OutlookEvaluationService(db_session)
+    svc.run_once()
+    penalty = svc.recent_quality_penalty(asset.id)
+    assert penalty >= 0.0
+
+    global_card = svc.global_scorecard()
+    assert "by_model" in global_card
+    assert "m4.2-refined-ensemble-v1" in global_card["by_model"]

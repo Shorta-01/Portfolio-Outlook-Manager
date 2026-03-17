@@ -21,6 +21,10 @@ class OutlookSnapshot(Base):
     short_term_score: Mapped[float] = mapped_column(Numeric(12, 6), nullable=False)
     medium_term_score: Mapped[float] = mapped_column(Numeric(12, 6), nullable=False)
     model_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    component_flags: Mapped[str] = mapped_column(String(512), default="{}", nullable=False)
+    component_summary: Mapped[str] = mapped_column(String(2048), default="{}", nullable=False)
+    model_diagnostic_note: Mapped[str] = mapped_column(String(512), default="", nullable=False)
+    volatility_state: Mapped[str] = mapped_column(String(32), default="unknown", nullable=False)
 
     asset = relationship("Asset", back_populates="outlook_snapshots")
     evaluations = relationship("OutlookEvaluation", back_populates="outlook_snapshot", cascade="all, delete-orphan")

@@ -11,6 +11,7 @@ from app.repositories.asset_repo import AssetRepository
 from app.repositories.market_quote_repo import MarketQuoteRepository
 from app.repositories.outlook_snapshot_repo import OutlookSnapshotRepository
 from app.services.action_service import ActionService
+from app.services.outlook_evaluation_service import OutlookEvaluationService
 from app.services.scheduler_state import scheduler_state
 
 
@@ -22,6 +23,7 @@ class OutlookService:
         self.outlook_repo = OutlookSnapshotRepository(db)
         self.action_repo = ActionSnapshotRepository(db)
         self.action_service = ActionService()
+        self.outlook_evaluation_service = OutlookEvaluationService(db)
 
     def eligible_asset(self, asset) -> bool:
         if asset.asset_mode in {AssetMode.CASH, AssetMode.TERM_DEPOSIT}:
@@ -53,7 +55,8 @@ class OutlookService:
             return None
         quotes = list(reversed(self.quote_repo.recent_for_asset(asset.id, limit=60)))
         points = [QuotePoint(timestamp_utc=q.provider_timestamp_utc, price=float(q.price)) for q in quotes]
-        result = run_ensemble(points, datetime.utcnow())
+        eval_penalty = self.outlook_evaluation_service.recent_quality_penalty(asset.id)
+        result = run_ensemble(points, datetime.utcnow(), evaluation_quality_penalty=eval_penalty)
         action_label, invalidation_note = self.action_service.map_action(
             action_score=result.action_score,
             key_level_up=result.key_level_up,
@@ -73,6 +76,10 @@ class OutlookService:
             short_term_score=result.short_term_score,
             medium_term_score=result.medium_term_score,
             model_version=result.model_version,
+            component_flags=result.component_flags,
+            component_summary=result.component_summary,
+            model_diagnostic_note=result.model_diagnostic_note,
+            volatility_state=result.volatility_state,
         )
         action = ActionSnapshot(
             asset_id=asset.id,

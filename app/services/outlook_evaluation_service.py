@@ -47,6 +47,16 @@ class OutlookEvaluationService:
             return f"correct: predicted={predicted}, realized={realized_direction}"
         return f"incorrect: predicted={predicted}, realized={realized_direction}"
 
+    def recent_quality_penalty(self, asset_id: int, lookback_rows: int = 14) -> float:
+        recent = self.evaluation_repo.get_recent_by_asset(asset_id, limit=lookback_rows)
+        judged = [row.was_correct for row in recent if row.was_correct is not None]
+        if len(judged) < 4:
+            return 0.0
+        hit_rate = sum(1 for value in judged if value) / len(judged)
+        if hit_rate >= 0.58:
+            return 0.0
+        return min((0.58 - hit_rate) * 0.6, 0.25)
+
     def _evaluate_single(self, snapshot, config: HorizonConfig, now_utc: datetime) -> OutlookEvaluation | None:
         if self.evaluation_repo.get_by_snapshot_and_horizon(snapshot.id, config.horizon_type) is not None:
             return None
@@ -119,9 +129,18 @@ class OutlookEvaluationService:
         }
 
     def global_scorecard(self) -> dict:
+        model_versions = self.evaluation_repo.get_model_versions()
+        by_model = {
+            version: {
+                "accuracy": self.evaluation_repo.get_aggregate_accuracy_stats(model_version=version),
+                "confidence": self.evaluation_repo.get_confidence_bucket_stats(model_version=version),
+            }
+            for version in model_versions
+        }
         return {
             "accuracy": self.evaluation_repo.get_aggregate_accuracy_stats(asset_id=None),
             "confidence": self.evaluation_repo.get_confidence_bucket_stats(asset_id=None),
+            "by_model": by_model,
             "total_evaluated": self.evaluation_repo.count_rows(),
             "total_outlook_snapshots": self.snapshot_repo.count_rows(),
         }
