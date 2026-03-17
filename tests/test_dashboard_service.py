@@ -33,7 +33,22 @@ def test_dashboard_totals_exclude_assets_without_base_valuation(db_session):
     summary = DashboardService(db_session).summary_cards()
     assert summary.total_invested == Decimal("60")
     assert summary.total_current_value == Decimal("11")
+    assert summary.total_unrealized_pl_amount is None
+    assert summary.total_unrealized_pl_percent is None
     assert summary.totals_complete is False
     assert summary.missing_fx_asset_count == 1
     assert summary.missing_quote_asset_count == 1
     assert summary.omitted_from_totals_count == 2
+
+
+def test_dashboard_summary_hides_current_and_pl_when_only_incomplete_assets(db_session):
+    missing_quote = InstrumentService(db_session).create_asset(AssetCreate(display_name="NoQuote", asset_type=AssetType.FUND, asset_mode=AssetMode.OWNED, quote_currency="EUR"))
+    LotService(db_session).create_lot(LotCreate(asset_id=missing_quote.id, quantity="10", buy_price="123.456", buy_currency="EUR", buy_date="2024-01-01", fees="1.00"))
+
+    summary = DashboardService(db_session).summary_cards()
+    assert summary.total_invested == Decimal("1235.56")
+    assert summary.total_current_value is None
+    assert summary.total_unrealized_pl_amount is None
+    assert summary.total_unrealized_pl_percent is None
+    assert summary.totals_complete is False
+    assert summary.omitted_from_totals_count == 1

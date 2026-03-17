@@ -38,8 +38,8 @@ class OwnedAssetRow:
 @dataclass
 class SummaryCards:
     total_invested: Decimal
-    total_current_value: Decimal
-    total_unrealized_pl_amount: Decimal
+    total_current_value: Decimal | None
+    total_unrealized_pl_amount: Decimal | None
     total_unrealized_pl_percent: Decimal | None
     totals_complete: bool
     missing_fx_asset_count: int
