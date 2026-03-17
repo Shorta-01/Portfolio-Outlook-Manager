@@ -1,8 +1,10 @@
 import csv
 from io import StringIO
+
 from sqlalchemy.orm import Session
 
 from app.models.asset import AssetMode, AssetType
+from app.repositories.lot_repo import LotRepository
 from app.schemas.asset import AssetCreate
 from app.schemas.import_models import ImportResult, ImportRowError
 from app.schemas.lot import LotCreate
@@ -14,6 +16,7 @@ class ImportService:
     def __init__(self, db: Session):
         self.db = db
         self.instrument_service = InstrumentService(db)
+        self.lot_repo = LotRepository(db)
         self.lot_service = LotService(db)
 
     def import_csv(self, csv_text: str, import_kind: str) -> ImportResult:
@@ -22,19 +25,18 @@ class ImportService:
         for i, row in enumerate(reader, start=2):
             try:
                 if import_kind == "owned":
-                    self._import_owned_row(row)
+                    self._import_owned_row(row, result)
                 elif import_kind == "watchlist":
-                    self._import_watchlist_row(row)
+                    self._import_watchlist_row(row, result)
                 else:
                     raise ValueError("Unsupported import kind")
-                result.imported_count += 1
             except Exception as exc:  # noqa: BLE001
                 self.db.rollback()
                 result.failed_rows.append(ImportRowError(row_number=i, message=str(exc)))
         return result
 
-    def _import_owned_row(self, row: dict[str, str]) -> None:
-        asset = self.instrument_service.create_asset(
+    def _import_owned_row(self, row: dict[str, str], result: ImportResult) -> None:
+        asset, created = self.instrument_service.create_or_reuse_asset(
             AssetCreate(
                 display_name=row["display_name"],
                 asset_type=AssetType(row["asset_type"]),
@@ -44,20 +46,38 @@ class ImportService:
                 isin=row.get("isin"),
             )
         )
-        self.lot_service.create_lot(
-            LotCreate(
-                asset_id=asset.id,
-                quantity=row["quantity"],
-                buy_price=row["buy_price"],
-                buy_currency=row["buy_currency"],
-                buy_date=row["buy_date"],
-                fees=row.get("fees") or "0",
-                notes=row.get("notes") or None,
-            )
-        )
+        if created:
+            result.assets_created += 1
+        else:
+            result.assets_reused += 1
 
-    def _import_watchlist_row(self, row: dict[str, str]) -> None:
-        self.instrument_service.create_asset(
+        payload = LotCreate(
+            asset_id=asset.id,
+            quantity=row["quantity"],
+            buy_price=row["buy_price"],
+            buy_currency=row["buy_currency"],
+            buy_date=row["buy_date"],
+            fees=row.get("fees") or "0",
+            notes=row.get("notes") or None,
+        )
+        duplicate_lot = self.lot_repo.find_exact_duplicate(
+            asset_id=payload.asset_id,
+            quantity=payload.quantity,
+            buy_price=payload.buy_price,
+            buy_date=payload.buy_date,
+            buy_currency=payload.buy_currency,
+            fees=payload.fees,
+            notes=payload.notes,
+        )
+        if duplicate_lot is not None:
+            result.duplicates_skipped += 1
+            return
+
+        self.lot_service.create_lot(payload)
+        result.lots_created += 1
+
+    def _import_watchlist_row(self, row: dict[str, str], result: ImportResult) -> None:
+        _, created = self.instrument_service.create_or_reuse_asset(
             AssetCreate(
                 display_name=row["display_name"],
                 asset_type=AssetType(row["asset_type"]),
@@ -67,3 +87,8 @@ class ImportService:
                 isin=row.get("isin"),
             )
         )
+        if created:
+            result.assets_created += 1
+        else:
+            result.assets_reused += 1
+            result.duplicates_skipped += 1

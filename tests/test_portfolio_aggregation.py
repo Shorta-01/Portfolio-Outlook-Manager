@@ -14,8 +14,10 @@ def test_multiple_lot_aggregation(db_session):
     ls.create_lot(LotCreate(asset_id=asset.id, quantity="3", buy_price="5", buy_currency="USD", buy_date="2024-01-01", fees="1"))
     ls.create_lot(LotCreate(asset_id=asset.id, quantity="2", buy_price="7", buy_currency="USD", buy_date="2024-01-02", fees="1"))
     row = DashboardService(db_session).owned_rows()[0]
-    assert row.quantity == Decimal("5")
-    assert row.total_invested_value == Decimal("31")
+    assert row.total_quantity == Decimal("5")
+    assert row.weighted_avg_buy_price_ex_fees == Decimal("5.8")
+    assert row.total_fees == Decimal("2")
+    assert row.total_invested_value_including_fees == Decimal("31")
 
 
 def test_watchlist_separation(db_session):
