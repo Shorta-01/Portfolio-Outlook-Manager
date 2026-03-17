@@ -29,12 +29,14 @@ class OutlookEvaluationRepository:
         )
         return list(self.db.execute(stmt).scalars().all())
 
-    def get_aggregate_accuracy_stats(self, asset_id: int | None = None) -> dict[str, dict[str, int | float | None]]:
+    def get_aggregate_accuracy_stats(self, asset_id: int | None = None, model_version: str | None = None) -> dict[str, dict[str, int | float | None]]:
         data: dict[str, dict[str, int | float | None]] = {}
         for horizon in ("short", "medium"):
             stmt = select(OutlookEvaluation.was_correct).where(OutlookEvaluation.horizon_type == horizon)
             if asset_id is not None:
                 stmt = stmt.where(OutlookEvaluation.asset_id == asset_id)
+            if model_version is not None:
+                stmt = stmt.where(OutlookEvaluation.model_version == model_version)
             values = list(self.db.execute(stmt).scalars().all())
             judged = [v for v in values if v is not None]
             hits = sum(1 for v in judged if v)
@@ -48,7 +50,7 @@ class OutlookEvaluationRepository:
             }
         return data
 
-    def get_confidence_bucket_stats(self, asset_id: int | None = None) -> list[dict]:
+    def get_confidence_bucket_stats(self, asset_id: int | None = None, model_version: str | None = None) -> list[dict]:
         stmt = (
             select(
                 OutlookEvaluation.confidence_bucket,
@@ -61,6 +63,8 @@ class OutlookEvaluationRepository:
         )
         if asset_id is not None:
             stmt = stmt.where(OutlookEvaluation.asset_id == asset_id)
+        if model_version is not None:
+            stmt = stmt.where(OutlookEvaluation.model_version == model_version)
 
         rows = self.db.execute(stmt).all()
         out = []
@@ -78,6 +82,12 @@ class OutlookEvaluationRepository:
                 }
             )
         return out
+
+    def get_model_versions(self, asset_id: int | None = None) -> list[str]:
+        stmt = select(OutlookEvaluation.model_version).distinct().order_by(OutlookEvaluation.model_version.asc())
+        if asset_id is not None:
+            stmt = stmt.where(OutlookEvaluation.asset_id == asset_id)
+        return [row for row in self.db.execute(stmt).scalars().all() if row]
 
     def count_rows(self) -> int:
         return len(self.db.execute(select(OutlookEvaluation.id)).scalars().all())

@@ -27,6 +27,25 @@ class HorizonScores:
 
 
 @dataclass(frozen=True)
+class ComponentContribution:
+    name: str
+    short_score: float
+    medium_score: float
+    status: str
+    note: str = ""
+
+
+@dataclass(frozen=True)
+class EnsembleDiagnostics:
+    components_used: list[str]
+    component_details: list[dict[str, str | float | bool | None]]
+    disagreement_penalty: float
+    history_penalty: float
+    eval_penalty: float
+    volatility_state: str
+
+
+@dataclass(frozen=True)
 class OutlookResult:
     short_term_outlook: str
     medium_term_outlook: str
@@ -42,3 +61,7 @@ class OutlookResult:
     key_level_up: float | None
     key_level_down: float | None
     model_version: str
+    component_flags: str
+    component_summary: str
+    model_diagnostic_note: str
+    volatility_state: str
