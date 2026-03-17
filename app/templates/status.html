@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Status</h2>
+<ul>
+<li>App: {{status.app_status}}</li>
+<li>Database reachable: {{status.database_reachable}}</li>
+<li>Settings present: {{status.settings_present}}</li>
+<li>Polling rule count: {{status.polling_rule_count}}</li>
+<li>Scheduler: {{status.scheduler_status}}</li>
+</ul>
+{% endblock %}
