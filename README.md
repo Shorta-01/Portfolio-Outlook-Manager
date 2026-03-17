@@ -23,8 +23,10 @@ python scripts/init_db.py
 ```
 
 ## Run
+Use a local port that does not conflict with other apps running on your machine. If `8000` is already in use, run on another port such as `8001`.
+
 ```bash
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload --port 8001
 ```
 
 ## Test

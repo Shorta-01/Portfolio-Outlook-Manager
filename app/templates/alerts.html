@@ -2,17 +2,17 @@
 {% block content %}
 <h2>Alerts</h2>
 <form method="get" class="card">
-  <label><input type="checkbox" name="unread_only" value="1" {% if query.unread_only=='1' %}checked{% endif %}> Unread only</label>
-  <label><input type="checkbox" name="active_only" value="1" {% if query.active_only=='1' %}checked{% endif %}> Active only</label>
+  <label><input type="checkbox" name="unread_only" value="1" {% if query.unread_only=='1' %}checked{% endif %}> Unread only <span class="help-tip" data-tooltip="Show only alerts you have not marked as read.">ⓘ</span></label>
+  <label><input type="checkbox" name="active_only" value="1" {% if query.active_only=='1' %}checked{% endif %}> Active only <span class="help-tip" data-tooltip="Show only unresolved alerts that still need action.">ⓘ</span></label>
   <label><input type="checkbox" name="resolved_only" value="1" {% if query.resolved_only=='1' %}checked{% endif %}> Resolved only</label>
-  <label>Severity <input name="severity" value="{{query.severity}}"></label>
+  <label>Severity <span class="help-tip" data-tooltip="Priority level of the alert impact.">ⓘ</span> <input name="severity" value="{{query.severity}}"></label>
   <label>Asset
     <select name="asset_id"><option value="">All</option>{% for asset in assets %}<option value="{{asset.id}}" {% if query.asset_id==asset.id|string %}selected{% endif %}>{{asset.display_name}}</option>{% endfor %}</select>
   </label>
   <button type="submit">Filter</button>
 </form>
 <form method="post" action="/alerts/mark-all-read"><button type="submit">Mark all read</button></form>
-<table><thead><tr><th>Time</th><th>Severity</th><th>Asset</th><th>Title</th><th>Message</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+<table><thead><tr><th>Time</th><th data-tooltip="Priority level of this alert.">Severity</th><th>Asset</th><th>Title</th><th>Message</th><th data-tooltip="Read/unread and active/resolved state.">Status</th><th>Actions</th></tr></thead><tbody>
 {% for a in alerts %}
 <tr>
 <td>{{a.timestamp_utc}}</td><td>{{a.severity}}</td><td>{% if a.asset %}<a href="/assets/{{a.asset.id}}">{{a.asset.display_name}}</a>{% else %}—{% endif %}</td><td>{{a.title}}</td><td>{{a.message}}</td>

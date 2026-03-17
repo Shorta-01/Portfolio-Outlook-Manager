@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>CSV Import</h2>
-<p>Owned columns: display_name,asset_type,quote_currency,exchange,isin,quantity,buy_price,buy_currency,buy_date,fees,notes</p>
-<p>Watchlist columns: display_name,asset_type,quote_currency,exchange,isin,notes</p>
+<p data-tooltip="Expected columns for owned import rows.">Owned columns: display_name,asset_type,quote_currency,exchange,isin,quantity,buy_price,buy_currency,buy_date,fees,notes</p>
+<p data-tooltip="Expected columns for watchlist import rows.">Watchlist columns: display_name,asset_type,quote_currency,exchange,isin,notes</p>
 <form method="post" action="/imports/csv" enctype="multipart/form-data" class="card">
 <select name="import_kind"><option value="owned">Owned lots</option><option value="watchlist">Watchlist</option></select>
 <input type="file" name="file" required />
 <button type="submit">Import</button>
 </form>
-<p><a href="/exports/portfolio.csv">Export portfolio CSV</a> · <a href="/exports/portfolio-lots.csv">Export lots CSV</a> · <a href="/exports/watchlist.csv">Export watchlist CSV</a></p>
+<p><a href="/exports/portfolio.csv">Export portfolio CSV <span class="help-tip" data-tooltip="Downloads current owned valuation rows in CSV format.">ⓘ</span></a> · <a href="/exports/portfolio-lots.csv">Export lots CSV</a> · <a href="/exports/watchlist.csv">Export watchlist CSV</a></p>
 {% if result %}
 <div class="card">
 <p>Assets created: {{result.assets_created}}</p>
