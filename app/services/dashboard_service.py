@@ -10,6 +10,7 @@ from app.repositories.market_quote_repo import MarketQuoteRepository
 from app.repositories.settings_repo import SettingsRepository
 from app.schemas.dashboard import SummaryCards
 from app.services.valuation_service import ValuationService
+from app.services.outlook_service import OutlookService
 
 
 class DashboardService:
@@ -17,6 +18,7 @@ class DashboardService:
         self.asset_repo = AssetRepository(db)
         self.settings_repo = SettingsRepository(db)
         self.valuation_service = ValuationService(LotRepository(db), MarketQuoteRepository(db), FXRateRepository(db))
+        self.outlook_service = OutlookService(db)
 
     def _base_currency(self) -> str:
         settings = self.settings_repo.get_first()
@@ -25,10 +27,29 @@ class DashboardService:
     def owned_rows(self):
         assets = self.asset_repo.list_by_mode(AssetMode.OWNED)
         base_currency = self._base_currency()
-        return [self.valuation_service.aggregate_owned_asset(asset, base_currency) for asset in assets]
+        rows = []
+        for asset in assets:
+            row = self.valuation_service.aggregate_owned_asset(asset, base_currency)
+            outlook, action = self.outlook_service.latest_for_asset(asset.id)
+            row.outlook = outlook.short_term_outlook if outlook else None
+            row.suggested_action = action.action_label if action else None
+            row.confidence = outlook.confidence if outlook else None
+            rows.append(row)
+        return rows
 
     def watchlist_rows(self):
-        return self.asset_repo.list_by_mode(AssetMode.WATCHLIST)
+        rows = []
+        for asset in self.asset_repo.list_by_mode(AssetMode.WATCHLIST):
+            outlook, action = self.outlook_service.latest_for_asset(asset.id)
+            rows.append({
+                "id": asset.id,
+                "display_name": asset.display_name,
+                "asset_type": asset.asset_type.value,
+                "outlook": outlook.short_term_outlook if outlook else None,
+                "suggested_action": action.action_label if action else None,
+                "confidence": outlook.confidence if outlook else None,
+            })
+        return rows
 
     def summary_cards(self) -> SummaryCards:
         rows = self.owned_rows()

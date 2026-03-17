@@ -61,3 +61,5 @@ class Asset(Base):
     polling_rule = relationship("PollingRule", back_populates="asset", uselist=False, cascade="all, delete-orphan")
     market_quotes_raw = relationship("MarketQuoteRaw", back_populates="asset", cascade="all, delete-orphan")
     market_quotes = relationship("MarketQuote", back_populates="asset", cascade="all, delete-orphan")
+    outlook_snapshots = relationship("OutlookSnapshot", back_populates="asset", cascade="all, delete-orphan")
+    action_snapshots = relationship("ActionSnapshot", back_populates="asset", cascade="all, delete-orphan")

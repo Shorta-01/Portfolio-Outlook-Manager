@@ -24,6 +24,9 @@ class OwnedAssetRow:
     freshness_status: str = "unknown"
     source_label: str = "Unknown"
     valuation_warning: str | None = None
+    outlook: str | None = None
+    suggested_action: str | None = None
+    confidence: str | None = None
 
 
 @dataclass
