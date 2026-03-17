@@ -18,4 +18,6 @@ def health(db: Session = Depends(get_db_session)):
 
 @router.get("/status", response_class=HTMLResponse)
 def status(request: Request, db: Session = Depends(get_db_session)):
-    return templates.TemplateResponse("status.html", {"request": request, "status": StatusService(db).build()})
+    return templates.TemplateResponse(
+        "status.html", {"request": request, "status": StatusService(db).build(), "message": request.query_params.get("message")}
+    )

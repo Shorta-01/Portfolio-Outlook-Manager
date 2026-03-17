@@ -8,12 +8,15 @@
 <input type="file" name="file" required />
 <button type="submit">Import</button>
 </form>
+<p><a href="/exports/portfolio.csv">Export portfolio CSV</a> · <a href="/exports/portfolio-lots.csv">Export lots CSV</a> · <a href="/exports/watchlist.csv">Export watchlist CSV</a></p>
 {% if result %}
+<div class="card">
 <p>Assets created: {{result.assets_created}}</p>
 <p>Assets reused: {{result.assets_reused}}</p>
 <p>Lots created: {{result.lots_created}}</p>
 <p>Duplicates skipped: {{result.duplicates_skipped}}</p>
 <p>Failed rows: {{result.failed_rows|length}}</p>
-{% for err in result.failed_rows %}<p>Row {{err.row_number}}: {{err.message}}</p>{% endfor %}
+{% for err in result.failed_rows %}<p>Row {{err.row_number}} — {{err.message}}</p>{% endfor %}
+</div>
 {% endif %}
 {% endblock %}

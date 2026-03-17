@@ -1,5 +1,18 @@
 {% extends 'base.html' %}
 {% block content %}
 {% include 'components/summary_cards.html' %}
+<section class="card">
+  <form method="get" class="filters">
+    <input name="q" placeholder="Search name / ISIN / symbol" value="{{query.q}}" />
+    <select name="asset_type"><option value="">All types</option>{% for v in filter_options.asset_types %}<option value="{{v}}" {% if query.asset_type==v %}selected{% endif %}>{{v}}</option>{% endfor %}</select>
+    <select name="currency"><option value="">All currencies</option>{% for v in filter_options.currencies %}<option value="{{v}}" {% if query.currency==v %}selected{% endif %}>{{v}}</option>{% endfor %}</select>
+    <select name="outlook"><option value="">All outlooks</option>{% for v in filter_options.outlooks %}<option value="{{v}}" {% if query.outlook==v %}selected{% endif %}>{{v}}</option>{% endfor %}</select>
+    <select name="action"><option value="">All actions</option>{% for v in filter_options.actions %}<option value="{{v}}" {% if query.action==v %}selected{% endif %}>{{v}}</option>{% endfor %}</select>
+    <label><input type="checkbox" name="incomplete_only" value="1" {% if query.incomplete_only=='1' %}checked{% endif %}/> Incomplete valuation only</label>
+    <select name="sort"><option value="asset_name">Name</option><option value="asset_type">Type</option><option value="value_now">Value now</option><option value="pl_amount">P/L €</option><option value="pl_percent">P/L %</option><option value="confidence">Confidence</option><option value="urgency">Urgency</option><option value="last_update">Last update</option></select>
+    <select name="dir"><option value="asc" {% if query.dir=='asc' %}selected{% endif %}>Asc</option><option value="desc" {% if query.dir=='desc' %}selected{% endif %}>Desc</option></select>
+    <button type="submit">Apply</button>
+  </form>
+</section>
 {% include 'components/portfolio_grid.html' %}
 {% endblock %}

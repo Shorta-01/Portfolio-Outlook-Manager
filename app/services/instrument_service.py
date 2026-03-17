@@ -75,12 +75,27 @@ class InstrumentService:
                 return asset
         return None
 
+
+    def promote_watchlist_to_owned(self, asset_id: int) -> Asset:
+        asset = self.asset_repo.get(asset_id)
+        if asset is None:
+            raise ValueError("Asset not found")
+        if asset.asset_mode != AssetMode.WATCHLIST:
+            raise ValueError("Only watchlist assets can be promoted")
+        asset.asset_mode = AssetMode.OWNED
+        self._create_default_polling_rule(asset)
+        self.db.commit()
+        self.db.refresh(asset)
+        return asset
+
     def _create_default_polling_rule(self, asset: Asset) -> None:
         if asset.asset_mode not in {AssetMode.OWNED, AssetMode.WATCHLIST}:
             return
         if asset.asset_type in {AssetType.CASH, AssetType.TERM_DEPOSIT}:
             return
         if asset.asset_type not in POLL_CAPABLE_TYPES:
+            return
+        if any(rule.asset_id == asset.id for rule in self.polling_repo.list_all()):
             return
         defaults = self.settings_repo.get_first()
         interval = defaults.default_poll_every_minutes if defaults else 5

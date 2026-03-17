@@ -1,47 +1,41 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>{{asset.display_name}}</h2>
-<div class="card"><p>{{asset.asset_type.value}} / {{asset.asset_mode.value}} / {{asset.quote_currency}}</p>
-<p>ISIN: {{asset.isin or '—'}}</p>
-<form method="post" action="/assets/{{asset.id}}/backfill" style="margin: 8px 0;">
-  <button type="submit">Backfill history</button>
-</form>
-{% if is_owned %}<p>Quantity {{aggregate.total_quantity}} | Average buy price {{aggregate.weighted_avg_buy_price_ex_fees}} | Current price {{aggregate.current_price if aggregate.current_price is not none else '—'}}</p>
-<p>Value at buy {{aggregate.total_invested_value_including_fees}} | Value now {{aggregate.value_now if aggregate.has_base_value else '—'}} | P/L {{aggregate.unrealized_pl_amount if aggregate.has_base_value else '—'}} ({{aggregate.unrealized_pl_percent if aggregate.has_base_value and aggregate.unrealized_pl_percent is not none else '—'}})</p>
-<p>Quote-side value {{aggregate.value_now_quote_currency if aggregate.value_now_quote_currency is not none else '—'}} {{asset.quote_currency}} | Base currency {{base_currency}}</p>
-{% if aggregate.valuation_warning %}<p>{{aggregate.valuation_warning}}</p>{% endif %}
-<p>Freshness {{aggregate.freshness_status}} | Source {{aggregate.source_label}}</p>{% endif %}
-{% if is_cash %}<p>Amount {{asset.current_amount}} {{asset.quote_currency}} | Value now {{valuation.value_now_base_currency}}</p><p>Source {{valuation.source_label}} | Freshness {{valuation.freshness_status}}</p>{% endif %}
-{% if is_term_deposit %}<p>Principal {{asset.principal_amount}} | Annual rate {{asset.interest_rate_annual}} | Start {{asset.start_date}} | Maturity {{asset.maturity_date}}</p>
-<p>Accrued value now {{valuation.value_now_base_currency}} | Maturity value {{maturity_value}}</p><p>Source {{valuation.source_label}} | Freshness {{valuation.freshness_status}}</p>{% endif %}
-{% if not is_cash and not is_term_deposit %}<h3>Forecast Decision Panel</h3><p>Short-term outlook: {{outlook.short_term_outlook if outlook else "unavailable"}} | Medium-term outlook: {{outlook.medium_term_outlook if outlook else "unavailable"}}</p><p>Suggested action: {{action.action_label if action else "unavailable"}} | Confidence: {{outlook.confidence if outlook else "unavailable"}} | Urgency: {{outlook.urgency if outlook else "unavailable"}}</p><p>Reason: {{outlook.reason_summary if outlook else "Outlook unavailable for this asset yet."}}</p><p>Risk note: {{outlook.risk_note if outlook else "—"}}</p><p>Key lower level: {{action.key_level_down if action and action.key_level_down is not none else "—"}} | Key upper level: {{action.key_level_up if action and action.key_level_up is not none else "—"}}</p><p>Invalidation note: {{action.invalidation_note if action else "—"}}</p>{% endif %}
+{% if message %}<p class="notice">{{message}}</p>{% endif %}
+<div class="card">
+  <p><strong>{{asset.asset_type.value}}</strong> · {{asset.asset_mode.value}} · Quote currency {{asset.quote_currency}}</p>
+  <p>ISIN: {{asset.isin or '—'}}</p>
+  <form method="post" action="/assets/{{asset.id}}/backfill" style="margin: 8px 0;"><button type="submit">Backfill history</button></form>
+  {% if is_watchlist %}<form method="post" action="/assets/{{asset.id}}/promote" style="margin: 8px 0;"><button type="submit">Promote to owned</button></form>{% endif %}
+
+  {% if is_owned %}
+  <h3>Current valuation</h3>
+  <p>Quantity {{aggregate.total_quantity}} · Avg buy {{aggregate.weighted_avg_buy_price_ex_fees}} · Current price {{aggregate.current_price if aggregate.current_price is not none else '—'}} (quote currency)</p>
+  <p>Value at buy {{aggregate.total_invested_value_including_fees}} · Value now {{aggregate.value_now if aggregate.has_base_value else '—'}} ({{base_currency}}) · P/L {{aggregate.unrealized_pl_amount if aggregate.has_base_value else '—'}} ({{aggregate.unrealized_pl_percent if aggregate.has_base_value and aggregate.unrealized_pl_percent is not none else '—'}})</p>
+  <p>Quote-side value {{aggregate.value_now_quote_currency if aggregate.value_now_quote_currency is not none else '—'}} {{asset.quote_currency}} · Base currency value in {{base_currency}}</p>
+  {% if aggregate.valuation_warning %}<p class="warning">{{aggregate.valuation_warning}}</p>{% endif %}
+  <p>Freshness {{aggregate.freshness_status}} · Source {{aggregate.source_label}}</p>
+  {% endif %}
+
+  {% if not is_cash and not is_term_deposit %}
+  <h3>Forecast decision</h3>
+  <p>Outlook (short/medium): {{outlook.short_term_outlook if outlook else "unavailable"}} / {{outlook.medium_term_outlook if outlook else "unavailable"}}</p>
+  <p>Action {{action.action_label if action else "unavailable"}} · Confidence {{outlook.confidence if outlook else "unavailable"}} · Urgency {{outlook.urgency if outlook else "unavailable"}}</p>
+  <p>Reason: {{outlook.reason_summary if outlook else "No outlook yet."}}</p>
+  <p>Risk note: {{outlook.risk_note if outlook else "—"}}</p>
+  <p>Key levels: lower {{action.key_level_down if action and action.key_level_down is not none else "—"}} | upper {{action.key_level_up if action and action.key_level_up is not none else "—"}}</p>
+  {% endif %}
 </div>
 {% include 'components/tabs.html' %}
 {% if is_owned %}{% include 'components/lot_table.html' %}{% endif %}
 <h3>Recent stored history</h3>
 {% if recent_quotes %}
-<table>
-  <thead><tr><th>Time (UTC)</th><th>Price</th><th>Currency</th><th>Provider</th><th>Interval</th></tr></thead>
-  <tbody>
-  {% for q in recent_quotes %}
-    <tr><td>{{q.provider_timestamp_utc}}</td><td>{{q.price}}</td><td>{{q.quote_currency}}</td><td>{{q.provider_name}}</td><td>{{q.interval_type}}</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p>No stored history yet.</p>
-{% endif %}
+<table><thead><tr><th>Time (UTC)</th><th>Price</th><th>Currency</th><th>Provider</th><th>Interval</th></tr></thead><tbody>{% for q in recent_quotes %}<tr><td>{{q.provider_timestamp_utc}}</td><td>{{q.price}}</td><td>{{q.quote_currency}}</td><td>{{q.provider_name}}</td><td>{{q.interval_type}}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p>No quote history yet.</p>{% endif %}
 <h3>Recent outlook history</h3>
-{% if recent_outlook_history %}<table><thead><tr><th>Time (UTC)</th><th>Short</th><th>Medium</th><th>Confidence</th><th>Urgency</th></tr></thead><tbody>{% for o in recent_outlook_history %}<tr><td>{{o.timestamp_utc}}</td><td>{{o.short_term_outlook}}</td><td>{{o.medium_term_outlook}}</td><td>{{o.confidence}}</td><td>{{o.urgency}}</td></tr>{% endfor %}</tbody></table>{% else %}<p>No outlook snapshots yet.</p>{% endif %}
-
+{% if recent_outlook_history %}<table><thead><tr><th>Time (UTC)</th><th>Short</th><th>Medium</th><th>Confidence</th><th>Urgency</th></tr></thead><tbody>{% for o in recent_outlook_history %}<tr><td>{{o.timestamp_utc}}</td><td>{{o.short_term_outlook}}</td><td>{{o.medium_term_outlook}}</td><td>{{o.confidence}}</td><td>{{o.urgency}}</td></tr>{% endfor %}</tbody></table>{% else %}<p>No outlook yet.</p>{% endif %}
 <h3>Outlook evaluation scorecard</h3>
 <p>Short-term hit rate: {{ '%.2f'|format((outlook_scorecard.accuracy.short.hit_rate or 0) * 100) if outlook_scorecard.accuracy.short.hit_rate is not none else '—' }}% ({{ outlook_scorecard.accuracy.short.hits }}/{{ outlook_scorecard.accuracy.short.total }})</p>
 <p>Medium-term hit rate: {{ '%.2f'|format((outlook_scorecard.accuracy.medium.hit_rate or 0) * 100) if outlook_scorecard.accuracy.medium.hit_rate is not none else '—' }}% ({{ outlook_scorecard.accuracy.medium.hits }}/{{ outlook_scorecard.accuracy.medium.total }})</p>
-{% if outlook_scorecard.confidence %}
-<p>Confidence calibration:</p>
-<ul>{% for row in outlook_scorecard.confidence %}<li>{{ row.confidence_bucket }}: {{ '%.2f'|format((row.hit_rate or 0) * 100) if row.hit_rate is not none else '—' }}% ({{ row.hits }}/{{ row.judged_total }}, neutral={{ row.neutral }})</li>{% endfor %}</ul>
-{% endif %}
-{% if outlook_scorecard.recent %}
-<table><thead><tr><th>Evaluated</th><th>Horizon</th><th>Predicted</th><th>Realized</th><th>Return</th><th>Verdict</th></tr></thead><tbody>{% for ev in outlook_scorecard.recent %}<tr><td>{{ ev.evaluation_timestamp_utc }}</td><td>{{ ev.horizon_type }}</td><td>{{ ev.predicted_label }}</td><td>{{ ev.realized_direction }}</td><td>{{ ev.realized_return }}</td><td>{% if ev.was_correct is none %}neutral{% elif ev.was_correct %}correct{% else %}incorrect{% endif %}</td></tr>{% endfor %}</tbody></table>
-{% else %}<p>No evaluations yet for this asset.</p>{% endif %}
+{% if outlook_scorecard.recent %}<table><thead><tr><th>Evaluated</th><th>Horizon</th><th>Predicted</th><th>Realized</th><th>Return</th><th>Verdict</th></tr></thead><tbody>{% for ev in outlook_scorecard.recent %}<tr><td>{{ ev.evaluation_timestamp_utc }}</td><td>{{ ev.horizon_type }}</td><td>{{ ev.predicted_label }}</td><td>{{ ev.realized_direction }}</td><td>{{ ev.realized_return }}</td><td>{% if ev.was_correct is none %}neutral{% elif ev.was_correct %}correct{% else %}incorrect{% endif %}</td></tr>{% endfor %}</tbody></table>{% else %}<p>No evaluations yet.</p>{% endif %}
 {% endblock %}

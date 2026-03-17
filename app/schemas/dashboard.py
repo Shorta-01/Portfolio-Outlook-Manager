@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 
 
@@ -27,6 +28,11 @@ class OwnedAssetRow:
     outlook: str | None = None
     suggested_action: str | None = None
     confidence: str | None = None
+    urgency: str | None = None
+    last_update_utc: datetime | None = None
+    quote_currency: str | None = None
+    isin: str | None = None
+    provider_symbol: str | None = None
 
 
 @dataclass
