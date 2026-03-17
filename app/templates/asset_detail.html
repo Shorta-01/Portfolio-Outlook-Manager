@@ -33,4 +33,15 @@
 {% endif %}
 <h3>Recent outlook history</h3>
 {% if recent_outlook_history %}<table><thead><tr><th>Time (UTC)</th><th>Short</th><th>Medium</th><th>Confidence</th><th>Urgency</th></tr></thead><tbody>{% for o in recent_outlook_history %}<tr><td>{{o.timestamp_utc}}</td><td>{{o.short_term_outlook}}</td><td>{{o.medium_term_outlook}}</td><td>{{o.confidence}}</td><td>{{o.urgency}}</td></tr>{% endfor %}</tbody></table>{% else %}<p>No outlook snapshots yet.</p>{% endif %}
+
+<h3>Outlook evaluation scorecard</h3>
+<p>Short-term hit rate: {{ '%.2f'|format((outlook_scorecard.accuracy.short.hit_rate or 0) * 100) if outlook_scorecard.accuracy.short.hit_rate is not none else '—' }}% ({{ outlook_scorecard.accuracy.short.hits }}/{{ outlook_scorecard.accuracy.short.total }})</p>
+<p>Medium-term hit rate: {{ '%.2f'|format((outlook_scorecard.accuracy.medium.hit_rate or 0) * 100) if outlook_scorecard.accuracy.medium.hit_rate is not none else '—' }}% ({{ outlook_scorecard.accuracy.medium.hits }}/{{ outlook_scorecard.accuracy.medium.total }})</p>
+{% if outlook_scorecard.confidence %}
+<p>Confidence calibration:</p>
+<ul>{% for row in outlook_scorecard.confidence %}<li>{{ row.confidence_bucket }}: {{ '%.2f'|format((row.hit_rate or 0) * 100) if row.hit_rate is not none else '—' }}% ({{ row.hits }}/{{ row.judged_total }}, neutral={{ row.neutral }})</li>{% endfor %}</ul>
+{% endif %}
+{% if outlook_scorecard.recent %}
+<table><thead><tr><th>Evaluated</th><th>Horizon</th><th>Predicted</th><th>Realized</th><th>Return</th><th>Verdict</th></tr></thead><tbody>{% for ev in outlook_scorecard.recent %}<tr><td>{{ ev.evaluation_timestamp_utc }}</td><td>{{ ev.horizon_type }}</td><td>{{ ev.predicted_label }}</td><td>{{ ev.realized_direction }}</td><td>{{ ev.realized_return }}</td><td>{% if ev.was_correct is none %}neutral{% elif ev.was_correct %}correct{% else %}incorrect{% endif %}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p>No evaluations yet for this asset.</p>{% endif %}
 {% endblock %}

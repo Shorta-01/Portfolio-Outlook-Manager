@@ -42,6 +42,22 @@ class MarketQuoteRepository:
     def has_quote_for_asset(self, asset_id: int) -> bool:
         return self.latest_for_asset(asset_id) is not None
 
+    def latest_at_or_before(self, asset_id: int, at_utc: datetime) -> MarketQuote | None:
+        stmt = (
+            select(MarketQuote)
+            .where(MarketQuote.asset_id == asset_id, MarketQuote.provider_timestamp_utc <= at_utc)
+            .order_by(MarketQuote.provider_timestamp_utc.desc(), MarketQuote.id.desc())
+        )
+        return self.db.execute(stmt).scalars().first()
+
+    def earliest_at_or_after(self, asset_id: int, at_utc: datetime) -> MarketQuote | None:
+        stmt = (
+            select(MarketQuote)
+            .where(MarketQuote.asset_id == asset_id, MarketQuote.provider_timestamp_utc >= at_utc)
+            .order_by(MarketQuote.provider_timestamp_utc.asc(), MarketQuote.id.asc())
+        )
+        return self.db.execute(stmt).scalars().first()
+
     def find_duplicate_normalized(
         self,
         *,

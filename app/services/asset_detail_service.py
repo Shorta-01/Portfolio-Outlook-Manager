@@ -8,6 +8,7 @@ from app.repositories.market_quote_repo import MarketQuoteRepository
 from app.repositories.settings_repo import SettingsRepository
 from app.services.valuation_service import ValuationService
 from app.services.outlook_service import OutlookService
+from app.services.outlook_evaluation_service import OutlookEvaluationService
 
 
 class AssetDetailService:
@@ -18,6 +19,7 @@ class AssetDetailService:
         self.settings_repo = SettingsRepository(db)
         self.valuation_service = ValuationService(self.lot_repo, MarketQuoteRepository(db), FXRateRepository(db))
         self.outlook_service = OutlookService(db)
+        self.outlook_evaluation_service = OutlookEvaluationService(db)
 
     def build(self, asset_id: int) -> dict:
         asset = self.asset_repo.get(asset_id)
@@ -57,4 +59,5 @@ class AssetDetailService:
             "outlook": outlook,
             "action": action,
             "recent_outlook_history": self.outlook_service.recent_history_for_asset(asset.id, limit=10),
+            "outlook_scorecard": self.outlook_evaluation_service.scorecard_for_asset(asset.id),
         }

@@ -30,6 +30,23 @@ class OutlookService:
             return False
         return True
 
+    def _normalize_reason(self, reason: str) -> str:
+        return " ".join(reason.strip().lower().split())
+
+    def _materially_unchanged(self, asset_id: int, outlook: OutlookSnapshot, action: ActionSnapshot) -> bool:
+        latest_outlook = self.outlook_repo.get_latest_by_asset(asset_id)
+        latest_action = self.action_repo.get_latest_by_asset(asset_id)
+        if latest_outlook is None or latest_action is None:
+            return False
+        return (
+            latest_outlook.short_term_outlook == outlook.short_term_outlook
+            and latest_outlook.medium_term_outlook == outlook.medium_term_outlook
+            and latest_outlook.confidence == outlook.confidence
+            and latest_outlook.urgency == outlook.urgency
+            and self._normalize_reason(latest_outlook.reason_summary) == self._normalize_reason(outlook.reason_summary)
+            and latest_action.action_label == action.action_label
+        )
+
     def run_for_asset(self, asset_id: int):
         asset = self.asset_repo.get(asset_id)
         if asset is None or not self.eligible_asset(asset):
@@ -67,6 +84,8 @@ class OutlookService:
             key_level_down=result.key_level_down,
             model_version=result.model_version,
         )
+        if self._materially_unchanged(asset.id, outlook, action):
+            return None
         self.outlook_repo.insert_snapshot(outlook)
         self.action_repo.insert_snapshot(action)
         return outlook, action
@@ -74,6 +93,7 @@ class OutlookService:
     def run_once_for_eligible_assets(self) -> dict:
         processed = 0
         skipped = 0
+        unchanged = 0
         for asset in self.asset_repo.list_all():
             if not self.eligible_asset(asset):
                 skipped += 1
@@ -81,11 +101,14 @@ class OutlookService:
             if not self.quote_repo.has_quote_for_asset(asset.id):
                 skipped += 1
                 continue
-            self.run_for_asset(asset.id)
+            created = self.run_for_asset(asset.id)
+            if created is None:
+                unchanged += 1
+                continue
             processed += 1
         self.db.commit()
         scheduler_state.last_successful_outlook_run_utc = datetime.utcnow()
-        return {"ok": True, "processed": processed, "skipped": skipped}
+        return {"ok": True, "processed": processed, "skipped": skipped, "unchanged": unchanged}
 
     def latest_for_asset(self, asset_id: int):
         return self.outlook_repo.get_latest_by_asset(asset_id), self.action_repo.get_latest_by_asset(asset_id)

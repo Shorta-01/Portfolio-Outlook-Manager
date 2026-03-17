@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -29,3 +31,10 @@ class OutlookSnapshotRepository:
             .limit(limit)
         )
         return list(self.db.execute(stmt).scalars().all())
+
+    def list_due_for_evaluation(self, due_before_utc: datetime) -> list[OutlookSnapshot]:
+        stmt = select(OutlookSnapshot).where(OutlookSnapshot.timestamp_utc <= due_before_utc)
+        return list(self.db.execute(stmt).scalars().all())
+
+    def count_rows(self) -> int:
+        return len(self.db.execute(select(OutlookSnapshot.id)).scalars().all())
