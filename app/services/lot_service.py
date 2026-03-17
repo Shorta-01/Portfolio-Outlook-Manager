@@ -5,6 +5,7 @@ from app.models.lot import Lot
 from app.repositories.asset_repo import AssetRepository
 from app.repositories.lot_repo import LotRepository
 from app.schemas.lot import LotCreate
+from app.schemas.lot import LotUpdate
 
 
 class LotService:
@@ -27,3 +28,26 @@ class LotService:
 
     def list_lots_for_asset(self, asset_id: int) -> list[Lot]:
         return self.lot_repo.list_for_asset(asset_id)
+
+    def update_lot(self, lot_id: int, payload: LotUpdate) -> Lot:
+        lot = self.lot_repo.get(lot_id)
+        if lot is None:
+            raise ValueError("Lot not found")
+        lot.quantity = payload.quantity
+        lot.buy_price = payload.buy_price
+        lot.buy_currency = payload.buy_currency.strip().upper()
+        lot.buy_date = payload.buy_date
+        lot.fees = payload.fees
+        lot.notes = payload.notes
+        self.db.commit()
+        self.db.refresh(lot)
+        return lot
+
+    def delete_lot(self, lot_id: int) -> int:
+        lot = self.lot_repo.get(lot_id)
+        if lot is None:
+            raise ValueError("Lot not found")
+        asset_id = lot.asset_id
+        self.lot_repo.delete(lot)
+        self.db.commit()
+        return asset_id

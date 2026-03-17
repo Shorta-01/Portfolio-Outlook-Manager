@@ -20,6 +20,12 @@ class LotRepository:
         stmt = select(Lot).where(Lot.asset_id == asset_id).order_by(Lot.buy_date.desc())
         return list(self.db.execute(stmt).scalars().all())
 
+    def get(self, lot_id: int) -> Lot | None:
+        return self.db.get(Lot, lot_id)
+
+    def delete(self, lot: Lot) -> None:
+        self.db.delete(lot)
+
     def find_exact_duplicate(
         self,
         *,

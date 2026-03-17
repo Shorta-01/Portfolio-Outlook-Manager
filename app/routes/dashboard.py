@@ -56,7 +56,14 @@ def home(
     all_rows = service.owned_rows()
     return templates.TemplateResponse(
         "dashboard.html",
-        {"request": request, "rows": rows, "summary": service.summary_cards(), **_ui_context(all_rows, query)},
+        {
+            "request": request,
+            "rows": rows,
+            "summary": service.summary_cards(),
+            "message": request.query_params.get("message"),
+            "message_level": request.query_params.get("message_level", "notice"),
+            **_ui_context(all_rows, query),
+        },
     )
 
 
@@ -88,4 +95,13 @@ def watchlist(
     }
     rows = service.query_watchlist_rows(query)
     all_rows = service.watchlist_rows()
-    return templates.TemplateResponse("watchlist.html", {"request": request, "rows": rows, **_ui_context(all_rows, query)})
+    return templates.TemplateResponse(
+        "watchlist.html",
+        {
+            "request": request,
+            "rows": rows,
+            "message": request.query_params.get("message"),
+            "message_level": request.query_params.get("message_level", "notice"),
+            **_ui_context(all_rows, query),
+        },
+    )

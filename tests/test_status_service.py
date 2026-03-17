@@ -45,3 +45,5 @@ def test_status_runtime_and_backup_metadata_keys(db_session):
     assert "latest_backup_timestamp_utc" in status
     assert "latest_backup_path" in status
     assert "incomplete_valuation_count" in status
+    assert "maintenance_issue_count" in status
+    assert "archived_asset_count" in status

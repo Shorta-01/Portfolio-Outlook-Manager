@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
 {% block content %}
+{% if message %}<p class="{{ message_level or 'notice' }}">{{message}}</p>{% endif %}
 {% include 'components/summary_cards.html' %}
+{% if rows|length == 0 %}
+<section class="card">
+  <h3>Getting started</h3>
+  <ol>
+    <li>Initialize DB and configure settings.</li><li>Import CSV or add assets.</li><li>Add lots for owned assets.</li><li>Backfill history.</li><li>Run polling and outlook.</li><li>Run evaluation and review alerts/status.</li>
+  </ol>
+</section>
+{% endif %}
 <section class="card">
   <form method="get" class="filters">
     <input name="q" placeholder="Search name / ISIN / symbol" value="{{query.q}}" />

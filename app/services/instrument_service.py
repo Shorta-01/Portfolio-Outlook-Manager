@@ -8,6 +8,7 @@ from app.repositories.asset_repo import AssetRepository
 from app.repositories.polling_rule_repo import PollingRuleRepository
 from app.repositories.settings_repo import SettingsRepository
 from app.schemas.asset import AssetCreate
+from app.schemas.asset import AssetUpdate
 from app.services.asset_identity_service import AssetIdentityService
 from app.services.history_service import HistoryService
 
@@ -87,6 +88,65 @@ class InstrumentService:
         self.db.commit()
         self.db.refresh(asset)
         return asset
+
+    def update_asset(self, asset_id: int, payload: AssetUpdate) -> Asset:
+        asset = self.asset_repo.get(asset_id)
+        if asset is None:
+            raise ValueError("Asset not found")
+
+        asset.display_name = payload.display_name.strip()
+        asset.quote_currency = payload.quote_currency.strip().upper()
+        asset.exchange = payload.exchange
+        asset.isin = payload.isin.strip().upper() if payload.isin else None
+        asset.provider_symbol_primary = payload.provider_symbol_primary.strip().upper() if payload.provider_symbol_primary else None
+
+        is_cash = asset.asset_mode == AssetMode.CASH or asset.asset_type == AssetType.CASH
+        if is_cash:
+            if payload.current_amount is None:
+                raise ValueError("Cash assets require current amount")
+            asset.current_amount = payload.current_amount
+
+        is_td = asset.asset_mode == AssetMode.TERM_DEPOSIT or asset.asset_type == AssetType.TERM_DEPOSIT
+        if is_td:
+            if payload.principal_amount is None or payload.interest_rate_annual is None or payload.start_date is None or payload.maturity_date is None:
+                raise ValueError("Term deposit updates require principal, annual rate, start date, and maturity date")
+            asset.principal_amount = payload.principal_amount
+            asset.interest_rate_annual = payload.interest_rate_annual / 100 if payload.interest_rate_annual > 1 else payload.interest_rate_annual
+            asset.start_date = payload.start_date
+            asset.maturity_date = payload.maturity_date
+            asset.bank_name = payload.bank_name
+            if asset.maturity_date < asset.start_date:
+                raise ValueError("Maturity date must be on or after start date")
+
+        self.db.commit()
+        self.db.refresh(asset)
+        return asset
+
+    def archive_asset(self, asset_id: int) -> Asset:
+        asset = self.asset_repo.get(asset_id)
+        if asset is None:
+            raise ValueError("Asset not found")
+        asset.enabled = False
+        self.db.commit()
+        self.db.refresh(asset)
+        return asset
+
+    def delete_asset_if_safe(self, asset_id: int) -> None:
+        asset = self.asset_repo.get(asset_id)
+        if asset is None:
+            raise ValueError("Asset not found")
+        has_dependencies = any(
+            [
+                len(asset.lots) > 0,
+                len(asset.market_quotes) > 0,
+                len(asset.outlook_snapshots) > 0,
+                len(asset.alert_rules) > 0,
+            ]
+        )
+        if has_dependencies or asset.asset_mode != AssetMode.WATCHLIST:
+            raise ValueError("Hard delete is only allowed for dependency-free watchlist assets")
+        self.db.delete(asset)
+        self.db.commit()
 
     def _create_default_polling_rule(self, asset: Asset) -> None:
         if asset.asset_mode not in {AssetMode.OWNED, AssetMode.WATCHLIST}:

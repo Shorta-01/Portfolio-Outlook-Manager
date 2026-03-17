@@ -46,3 +46,17 @@ class AssetRead(BaseModel):
     quote_currency: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AssetUpdate(BaseModel):
+    display_name: str = Field(min_length=1)
+    quote_currency: str = Field(min_length=1)
+    exchange: str | None = None
+    isin: str | None = None
+    provider_symbol_primary: str | None = None
+    current_amount: Decimal | None = Field(default=None, ge=0)
+    principal_amount: Decimal | None = Field(default=None, gt=0)
+    interest_rate_annual: Decimal | None = Field(default=None, ge=0)
+    start_date: date | None = None
+    maturity_date: date | None = None
+    bank_name: str | None = None
