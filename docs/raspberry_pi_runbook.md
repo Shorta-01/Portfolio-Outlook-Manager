@@ -17,7 +17,14 @@ Use the `portfolio-outlook-manager.service` example in README and ensure:
 3. Add assets / lots or import CSV
 4. Backfill owned/watchlist assets
 5. Run manual polling/outlook/evaluation/alerts once from `/status`
-6. Verify `/status` has quote/FX coverage and no unresolved missing counts
+6. Open `/maintenance` and resolve duplicate-like, unresolved lookup, or stale/incomplete issues
+7. Verify `/status` has quote/FX coverage and no unresolved missing counts
+
+## Ongoing maintenance safety
+- Use asset detail pages to edit assets/lots.
+- Prefer **archive** over hard delete.
+- Hard delete is intended only for dependency-free watchlist rows and confirmed lot deletes.
+- Run a backup from `/status` before destructive changes.
 
 ## Restore
 1. Stop service: `sudo systemctl stop portfolio-outlook-manager`

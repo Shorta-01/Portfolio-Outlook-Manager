@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Maintenance</h2>
+<p>Scanned at: {{scanned_at_utc}} · Issues: {{issue_count}} · Archived assets: {{archived_asset_count}}</p>
+<p><a href="/status">View runtime status</a></p>
+{% if issues %}
+<table>
+  <thead><tr><th>Issue</th><th>Asset</th><th>Explanation</th><th>Suggested action</th></tr></thead>
+  <tbody>
+  {% for issue in issues %}
+  <tr>
+    <td>{{issue.label}}</td>
+    <td><a href="/assets/{{issue.asset_id}}">{{issue.asset_name}}</a></td>
+    <td>{{issue.detail}}</td>
+    <td>{{issue.next_action}}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="notice">No active maintenance issues found.</p>
+{% endif %}
+{% endblock %}

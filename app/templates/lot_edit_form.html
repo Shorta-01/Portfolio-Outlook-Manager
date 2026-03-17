@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Edit Lot #{{lot.id}}</h2>
+<div class="warning">Changing quantity, price, or date updates portfolio totals/history calculations.</div>
+<form method="post" class="card">
+  <input name="quantity" value="{{lot.quantity}}" required />
+  <input name="buy_price" value="{{lot.buy_price}}" required />
+  <input name="buy_currency" value="{{lot.buy_currency}}" required />
+  <input name="buy_date" value="{{lot.buy_date}}" type="date" required />
+  <input name="fees" value="{{lot.fees}}" />
+  <textarea name="notes">{{lot.notes or ''}}</textarea>
+  <button type="submit">Save lot</button>
+</form>
+{% endblock %}

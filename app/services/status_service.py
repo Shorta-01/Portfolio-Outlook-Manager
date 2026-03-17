@@ -14,6 +14,7 @@ from app.repositories.settings_repo import SettingsRepository
 from app.scheduler.engine import scheduler_running
 from app.services.dashboard_service import DashboardService
 from app.services.export_service import ExportService
+from app.services.maintenance_service import MaintenanceService
 from app.services.outlook_evaluation_service import OutlookEvaluationService
 from app.services.scheduler_state import scheduler_state
 from app.services.valuation_service import ValuationService
@@ -96,12 +97,16 @@ class StatusService:
         all_assets = self.asset_repo.list_all()
         backup_meta = self.export_service.latest_backup_metadata()
         runtime = self._runtime_state()
+        maintenance = MaintenanceService(self.db).scan()
 
         return {
             **runtime,
             "database_reachable": self.database_reachable(),
             "settings_present": settings is not None,
             "asset_counts": self.asset_repo.count_by_mode(),
+            "archived_asset_count": maintenance["archived_asset_count"],
+            "maintenance_issue_count": maintenance["issue_count"],
+            "last_maintenance_scan_utc": maintenance["scanned_at_utc"],
             "polling_rule_count": self.polling_repo.count(),
             "provider_freshness": "active",
             "assets_with_latest_quote": latest_quote_count,

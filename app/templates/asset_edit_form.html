@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Edit Asset</h2>
+{% if message %}<p class="warning">{{message}}</p>{% endif %}
+<form method="post" class="card">
+  <input name="display_name" value="{{asset.display_name}}" required />
+  <input name="quote_currency" value="{{asset.quote_currency}}" required />
+  <input name="exchange" value="{{asset.exchange or ''}}" placeholder="Exchange" />
+  <input name="isin" value="{{asset.isin or ''}}" placeholder="ISIN" />
+  <input name="provider_symbol_primary" value="{{asset.provider_symbol_primary or ''}}" placeholder="Provider symbol" />
+  {% if asset.asset_mode.value == 'cash' or asset.asset_type.value == 'cash' %}
+  <input name="current_amount" value="{{asset.current_amount or ''}}" placeholder="Current amount" required />
+  {% endif %}
+  {% if asset.asset_mode.value == 'term_deposit' or asset.asset_type.value == 'term_deposit' %}
+  <input name="principal_amount" value="{{asset.principal_amount or ''}}" placeholder="Principal" required />
+  <input name="interest_rate_annual" value="{{asset.interest_rate_annual or ''}}" placeholder="Annual rate (5 or 0.05)" required />
+  <input name="start_date" value="{{asset.start_date or ''}}" type="date" required />
+  <input name="maturity_date" value="{{asset.maturity_date or ''}}" type="date" required />
+  <input name="bank_name" value="{{asset.bank_name or ''}}" placeholder="Bank" />
+  {% endif %}
+  <button type="submit">Save changes</button>
+</form>
+{% endblock %}

@@ -17,6 +17,9 @@ class Settings:
     retention_action_snapshots_days: int = int(os.getenv("RETENTION_ACTION_SNAPSHOTS_DAYS", "365"))
     retention_outlook_evaluations_days: int = int(os.getenv("RETENTION_OUTLOOK_EVALUATIONS_DAYS", "730"))
     retention_alert_events_days: int = int(os.getenv("RETENTION_ALERT_EVENTS_DAYS", "180"))
+    app_version: str = os.getenv("APP_VERSION", "0.8.0-rc1")
+    app_build: str = os.getenv("APP_BUILD", os.getenv("GIT_COMMIT", "local"))
+    app_environment: str = os.getenv("APP_ENV", "beta")
 
 
 settings = Settings()

@@ -9,6 +9,8 @@ Portfolio Outlook Manager is a FastAPI + Jinja application for portfolio operati
 - Search/filter/sort/export across dashboard/watchlist.
 - Alert rules + in-app alert events.
 - Operational status page with runtime, data coverage, outlook quality, and manual operations.
+- Safe maintenance workflows: edit assets/lots, archive assets, guarded lot/watchlist deletes.
+- Maintenance page (`/maintenance`) for duplicate-like assets, stale watchlist entries, unresolved lookup, and incomplete valuation review.
 - Retention cleanup service with safe pruning guardrails.
 - SQLite backup workflow with latest backup metadata surfaced on `/status`.
 
@@ -42,13 +44,23 @@ pytest
 - `RETENTION_ACTION_SNAPSHOTS_DAYS` (default `365`)
 - `RETENTION_OUTLOOK_EVALUATIONS_DAYS` (default `730`)
 - `RETENTION_ALERT_EVENTS_DAYS` (default `180`)
+- `APP_VERSION` (default `0.8.0-rc1`)
+- `APP_BUILD` (default `local` or `GIT_COMMIT`)
+- `APP_ENV` (default `beta`)
 
 ## First-run checklist
 1. Initialize DB (`python scripts/init_db.py`).
 2. Add assets and lots (or import CSV).
 3. Backfill history per asset from asset detail page.
 4. Open `/status` and run: polling, outlook, evaluation, alerts.
-5. Verify data coverage (quote/FX) and incomplete valuation counts.
+5. Open `/maintenance` and resolve actionable issues.
+6. Verify data coverage (quote/FX) and incomplete valuation counts.
+
+## Edit/archive/delete policy
+- **Assets**: prefer archive (deactivate). Archived assets are excluded from active dashboard/watchlist queries.
+- **Lots**: editable; delete requires explicit typed confirmation and warns that totals/history can change.
+- **Watchlist assets**: hard delete only if dependency-free; otherwise use archive.
+- **Safety practice**: create a DB backup from `/status` before destructive actions.
 
 ## Backup procedure
 - UI route: `/status` → **Create backup**.

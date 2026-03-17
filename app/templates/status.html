@@ -25,6 +25,9 @@
     <p>Incomplete valuations: {{status.incomplete_valuation_count}}</p>
     <p>Missing quote: {{status.assets_missing_quote}}</p>
     <p>Missing FX: {{status.assets_missing_fx}}</p>
+    <p>Archived assets: {{status.archived_asset_count}}</p>
+    <p>Maintenance issues: {{status.maintenance_issue_count}}</p>
+    <p>Last maintenance scan: {{status.last_maintenance_scan_utc or '—'}}</p>
   </div>
   <div class="card">
     <h3>Alerts</h3>
@@ -45,6 +48,13 @@
 </div>
 
 <div class="card">
+  <h3>Build info</h3>
+  <p>Version: {{status.app_version}}</p>
+  <p>Build: {{status.app_build}}</p>
+  <p>Environment: {{status.app_environment}}</p>
+</div>
+
+<div class="card">
   <h3>Manual operations</h3>
   <form method="post" action="/admin/polling/run-once"><button type="submit">Run polling once</button></form>
   <form method="post" action="/admin/outlook/run-once"><button type="submit">Run outlook once</button></form>
@@ -54,6 +64,6 @@
   <form method="post" action="/exports/backup-db"><button type="submit">Create backup</button></form>
   <p>Latest backup path: {{status.latest_backup_path or '—'}}</p>
   <p>Last cleanup removed rows: {{status.last_cleanup_summary or {}}}</p>
-  <p><a href="/exports/portfolio.csv">Portfolio CSV</a> · <a href="/exports/watchlist.csv">Watchlist CSV</a> · <a href="/exports/portfolio-lots.csv">Lots CSV</a></p>
+  <p><a href="/exports/portfolio.csv">Portfolio CSV</a> · <a href="/exports/watchlist.csv">Watchlist CSV</a> · <a href="/exports/portfolio-lots.csv">Lots CSV</a> · <a href="/maintenance">Maintenance page</a></p>
 </div>
 {% endblock %}

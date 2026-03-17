@@ -1,37 +1,53 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>{{asset.display_name}}</h2>
-{% if message %}<p class="notice">{{message}}</p>{% endif %}
+<h2>{{asset.display_name}} ({{asset.asset_type.value}})</h2>
+{% if message %}<p class="{{ message_level or 'notice' }}">{{message}}</p>{% endif %}
+
 <div class="card">
-  <p><strong>{{asset.asset_type.value}}</strong> · {{asset.asset_mode.value}} · Quote currency {{asset.quote_currency}}</p>
-  <p>ISIN: {{asset.isin or '—'}}</p>
-  <form method="post" action="/assets/{{asset.id}}/backfill" style="margin: 8px 0;"><button type="submit">Backfill history</button></form>
-  {% if is_watchlist %}<form method="post" action="/assets/{{asset.id}}/promote" style="margin: 8px 0;"><button type="submit">Promote to owned</button></form>{% endif %}
+  <a href="/assets/{{asset.id}}/edit">Edit asset</a>
+  {% if is_owned %} · <a href="/lots/new?asset_id={{asset.id}}">Add lot</a>{% endif %}
+  {% if is_watchlist %} · <form method="post" action="/assets/{{asset.id}}/promote" style="display:inline"><button type="submit">Promote to owned</button></form>{% endif %}
+  {% if is_watchlist or is_owned %} · <form method="post" action="/assets/{{asset.id}}/backfill" style="display:inline"><button type="submit">Backfill history</button></form>{% endif %}
+</div>
 
-  {% if is_owned %}
-  <h3>Current valuation</h3>
-  <p>Quantity {{aggregate.total_quantity}} · Avg buy {{aggregate.weighted_avg_buy_price_ex_fees}} · Current price {{aggregate.current_price if aggregate.current_price is not none else '—'}} (quote currency)</p>
-  <p>Value at buy {{aggregate.total_invested_value_including_fees}} · Value now {{aggregate.value_now if aggregate.has_base_value else '—'}} ({{base_currency}}) · P/L {{aggregate.unrealized_pl_amount if aggregate.has_base_value else '—'}} ({{aggregate.unrealized_pl_percent if aggregate.has_base_value and aggregate.unrealized_pl_percent is not none else '—'}})</p>
-  <p>Quote-side value {{aggregate.value_now_quote_currency if aggregate.value_now_quote_currency is not none else '—'}} {{asset.quote_currency}} · Base currency value in {{base_currency}}</p>
+{% if is_owned and aggregate %}
+<div class="card">
+  <h3>Position</h3>
+  <p>Quantity: {{aggregate.total_quantity}}</p><p>Invested (incl fees): {{aggregate.total_invested_value_including_fees}}</p><p>Current value ({{base_currency}}): {{aggregate.value_now}}</p><p>P/L: {{aggregate.unrealized_pl_amount}} ({{aggregate.unrealized_pl_percent}}%)</p>
   {% if aggregate.valuation_warning %}<p class="warning">{{aggregate.valuation_warning}}</p>{% endif %}
-  <p>Freshness {{aggregate.freshness_status}} · Source {{aggregate.source_label}}</p>
-  {% endif %}
+</div>
+{% endif %}
 
-  {% if not is_cash and not is_term_deposit %}
-  <h3>Forecast decision</h3>
-  <p>Outlook (short/medium): {{outlook.short_term_outlook if outlook else "unavailable"}} / {{outlook.medium_term_outlook if outlook else "unavailable"}}</p>
-  <p>Action {{action.action_label if action else "unavailable"}} · Confidence {{outlook.confidence if outlook else "unavailable"}} · Urgency {{outlook.urgency if outlook else "unavailable"}}</p>
-  <p>Reason: {{outlook.reason_summary if outlook else "No outlook yet."}}</p>
-  <p>Risk note: {{outlook.risk_note if outlook else "—"}}</p>
-  <p>Key levels: lower {{action.key_level_down if action and action.key_level_down is not none else "—"}} | upper {{action.key_level_up if action and action.key_level_up is not none else "—"}}</p>
+{% if valuation %}
+<div class="card">
+  <h3>Valuation snapshot</h3>
+  <p>Current value ({{base_currency}}): {{valuation.value_now_base_currency}}</p>
+  {% if maturity_value %}<p>Maturity value estimate: {{maturity_value}}</p>{% endif %}
+  {% if valuation.valuation_warning %}<p class="warning">{{valuation.valuation_warning}}</p>{% endif %}
+</div>
+{% endif %}
+
+{% if lots %}
+{% include 'components/lot_table.html' %}
+{% endif %}
+
+<div class="card">
+  <h3>Safety actions</h3>
+  <p>Impact preview: this asset has {{ lots|length if lots else 0 }} lot(s). Archiving hides it from active portfolio math.</p>
+  <form method="post" action="/assets/{{asset.id}}/archive">
+    <input name="confirm" placeholder="Type ARCHIVE" />
+    <button type="submit">Archive asset</button>
+  </form>
+  {% if is_watchlist and (lots|length == 0) %}
+  <p>Hard delete is only available for dependency-free watchlist assets.</p>
+  <form method="post" action="/assets/{{asset.id}}/delete">
+    <input name="confirm" placeholder="Type DELETE" />
+    <button type="submit">Delete watchlist asset</button>
+  </form>
   {% endif %}
 </div>
-{% include 'components/tabs.html' %}
 
-<h3>Recent alerts</h3>
-{% if recent_alerts %}<ul>{% for a in recent_alerts %}<li>{{a.timestamp_utc}} · {{a.severity}} · {{a.title}} ({{"active" if a.is_active else "resolved"}})</li>{% endfor %}</ul>{% else %}<p>No alerts yet.</p>{% endif %}
-{% if is_owned %}{% include 'components/lot_table.html' %}{% endif %}
-<h3>Recent stored history</h3>
+<h3>Recent quote history</h3>
 {% if recent_quotes %}
 <table><thead><tr><th>Time (UTC)</th><th>Price</th><th>Currency</th><th>Provider</th><th>Interval</th></tr></thead><tbody>{% for q in recent_quotes %}<tr><td>{{q.provider_timestamp_utc}}</td><td>{{q.price}}</td><td>{{q.quote_currency}}</td><td>{{q.provider_name}}</td><td>{{q.interval_type}}</td></tr>{% endfor %}</tbody></table>
 {% else %}<p>No quote history yet.</p>{% endif %}
