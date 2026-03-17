@@ -5,7 +5,9 @@ from app.services.status_service import StatusService
 
 
 def test_status_service(db_session):
-    InstrumentService(db_session).create_asset(AssetCreate(display_name="X", asset_type=AssetType.CASH, asset_mode=AssetMode.CASH, quote_currency="EUR"))
+    InstrumentService(db_session).create_asset(AssetCreate(display_name="X", asset_type=AssetType.CASH, asset_mode=AssetMode.CASH, quote_currency="EUR", current_amount="1"))
     status = StatusService(db_session).build()
     assert status["database_reachable"] is True
     assert status["asset_counts"][AssetMode.CASH.value] == 1
+    assert status["assets_without_quote_data"] == 0
+    assert status["base_currency"] == "EUR"

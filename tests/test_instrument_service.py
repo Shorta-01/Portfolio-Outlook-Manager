@@ -6,13 +6,13 @@ from app.services.instrument_service import InstrumentService
 
 def test_cash_asset_never_creates_polling_rule(db_session):
     svc = InstrumentService(db_session)
-    svc.create_asset(AssetCreate(display_name="cash", asset_type=AssetType.CASH, asset_mode=AssetMode.CASH, quote_currency="EUR"))
+    svc.create_asset(AssetCreate(display_name="cash", asset_type=AssetType.CASH, asset_mode=AssetMode.CASH, quote_currency="EUR", current_amount="10"))
     assert PollingRuleRepository(db_session).count() == 0
 
 
 def test_term_deposit_never_creates_polling_rule(db_session):
     svc = InstrumentService(db_session)
-    svc.create_asset(AssetCreate(display_name="td", asset_type=AssetType.TERM_DEPOSIT, asset_mode=AssetMode.TERM_DEPOSIT, quote_currency="EUR"))
+    svc.create_asset(AssetCreate(display_name="td", asset_type=AssetType.TERM_DEPOSIT, asset_mode=AssetMode.TERM_DEPOSIT, quote_currency="EUR", principal_amount="100", interest_rate_annual="0.01", start_date="2024-01-01", maturity_date="2024-12-31"))
     assert PollingRuleRepository(db_session).count() == 0
 
 

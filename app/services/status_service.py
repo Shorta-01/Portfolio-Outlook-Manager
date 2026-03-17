@@ -1,9 +1,14 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.models.asset import AssetMode
 from app.repositories.asset_repo import AssetRepository
+from app.repositories.market_quote_repo import MarketQuoteRepository
 from app.repositories.polling_rule_repo import PollingRuleRepository
 from app.repositories.settings_repo import SettingsRepository
+from app.services.valuation_service import ValuationService
+from app.repositories.lot_repo import LotRepository
+from app.repositories.fx_rate_repo import FXRateRepository
 
 
 class StatusService:
@@ -11,7 +16,9 @@ class StatusService:
         self.db = db
         self.asset_repo = AssetRepository(db)
         self.polling_repo = PollingRuleRepository(db)
+        self.quote_repo = MarketQuoteRepository(db)
         self.settings_repo = SettingsRepository(db)
+        self.valuation_service = ValuationService(LotRepository(db), MarketQuoteRepository(db), FXRateRepository(db))
 
     def database_reachable(self) -> bool:
         try:
@@ -21,12 +28,33 @@ class StatusService:
             return False
 
     def build(self) -> dict:
+        owned_assets = self.asset_repo.list_by_mode(AssetMode.OWNED)
+        latest_quote_count = 0
+        stale_or_unknown = 0
+        without_quote = 0
+        for asset in owned_assets:
+            latest = self.quote_repo.latest_for_asset(asset.id)
+            if latest is None:
+                without_quote += 1
+                stale_or_unknown += 1
+                continue
+            latest_quote_count += 1
+            freshness = self.valuation_service._freshness_from_timestamp(latest.provider_timestamp_utc)
+            if freshness in {"stale", "unknown"}:
+                stale_or_unknown += 1
+
+        settings = self.settings_repo.get_first()
+        base_currency = settings.portfolio_base_currency if settings else "EUR"
         return {
             "app_status": "ok",
             "database_reachable": self.database_reachable(),
-            "settings_present": self.settings_repo.get_first() is not None,
+            "settings_present": settings is not None,
             "asset_counts": self.asset_repo.count_by_mode(),
             "polling_rule_count": self.polling_repo.count(),
             "scheduler_status": "placeholder",
-            "provider_freshness": "placeholder",
+            "provider_freshness": "active",
+            "assets_with_latest_quote": latest_quote_count,
+            "assets_stale_or_unknown_prices": stale_or_unknown,
+            "assets_without_quote_data": without_quote,
+            "base_currency": base_currency,
         }

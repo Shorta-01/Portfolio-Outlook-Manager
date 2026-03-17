@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Manual Quote Entry</h2>
+<form method="post" action="/admin/quotes" class="card">
+<select name="asset_id" required>{% for a in assets %}<option value="{{a.id}}">{{a.display_name}} ({{a.asset_type.value}})</option>{% endfor %}</select>
+<input name="provider_name" placeholder="Provider" required />
+<input name="provider_symbol" placeholder="Provider symbol" required />
+<input name="price" placeholder="Price" required />
+<input name="quote_currency" placeholder="Quote currency" required />
+<input name="provider_timestamp_utc" value="{{now}}" required />
+<button type="submit">Save quote</button>
+</form>
+{% endblock %}

@@ -38,6 +38,14 @@ class AssetIdentityService:
                 exchange=asset.exchange,
                 isin=asset.isin,
                 is_manual_asset=asset.is_manual_asset,
+                current_amount=asset.current_amount,
+                principal_amount=asset.principal_amount,
+                interest_rate_annual=asset.interest_rate_annual,
+                start_date=asset.start_date,
+                maturity_date=asset.maturity_date,
+                accrual_method=asset.accrual_method,
+                payout_type=asset.payout_type,
+                bank_name=asset.bank_name,
             )
         )
 

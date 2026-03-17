@@ -1,26 +1,44 @@
 from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
 from app.models.asset import AssetMode
 from app.repositories.asset_repo import AssetRepository
+from app.repositories.fx_rate_repo import FXRateRepository
 from app.repositories.lot_repo import LotRepository
+from app.repositories.market_quote_repo import MarketQuoteRepository
+from app.repositories.settings_repo import SettingsRepository
 from app.schemas.dashboard import SummaryCards
-from app.services.portfolio_service import PortfolioService
+from app.services.valuation_service import ValuationService
 
 
 class DashboardService:
     def __init__(self, db: Session):
         self.asset_repo = AssetRepository(db)
-        self.portfolio_service = PortfolioService(LotRepository(db))
+        self.settings_repo = SettingsRepository(db)
+        self.valuation_service = ValuationService(LotRepository(db), MarketQuoteRepository(db), FXRateRepository(db))
+
+    def _base_currency(self) -> str:
+        settings = self.settings_repo.get_first()
+        return settings.portfolio_base_currency if settings else "EUR"
 
     def owned_rows(self):
         assets = self.asset_repo.list_by_mode(AssetMode.OWNED)
-        return [self.portfolio_service.aggregate_asset(asset) for asset in assets]
+        base_currency = self._base_currency()
+        return [self.valuation_service.aggregate_owned_asset(asset, base_currency) for asset in assets]
 
     def watchlist_rows(self):
-        assets = self.asset_repo.list_by_mode(AssetMode.WATCHLIST)
-        return assets
+        return self.asset_repo.list_by_mode(AssetMode.WATCHLIST)
 
     def summary_cards(self) -> SummaryCards:
-        total_invested = sum((row.total_invested_value_including_fees for row in self.owned_rows()), Decimal("0"))
-        return SummaryCards(total_invested=total_invested)
+        rows = self.owned_rows()
+        total_invested = sum((row.total_invested_value_including_fees for row in rows), Decimal("0"))
+        total_current = sum((row.value_now for row in rows), Decimal("0"))
+        pl_amount = total_current - total_invested
+        pl_percent = (pl_amount / total_invested * Decimal("100")) if total_invested > 0 else None
+        return SummaryCards(
+            total_invested=total_invested,
+            total_current_value=total_current,
+            total_unrealized_pl_amount=pl_amount,
+            total_unrealized_pl_percent=pl_percent,
+        )

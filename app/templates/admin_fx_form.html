@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Manual FX Entry</h2>
+<form method="post" action="/admin/fx" class="card">
+<input name="base_currency" placeholder="Base currency" required />
+<input name="quote_currency" placeholder="Quote currency" required />
+<input name="rate" placeholder="Rate" required />
+<input name="provider_name" placeholder="Provider" required />
+<input name="provider_timestamp_utc" value="{{now}}" required />
+<button type="submit">Save FX rate</button>
+</form>
+{% endblock %}
