@@ -14,5 +14,5 @@ def test_weighted_average_buy_price(db_session):
     lot_service = LotService(db_session)
     lot_service.create_lot(LotCreate(asset_id=asset.id, quantity=Decimal("2"), buy_price=Decimal("10"), buy_currency="EUR", buy_date="2024-01-01"))
     lot_service.create_lot(LotCreate(asset_id=asset.id, quantity=Decimal("1"), buy_price=Decimal("20"), buy_currency="EUR", buy_date="2024-01-02"))
-    row = PortfolioService(LotRepository(db_session)).aggregate_asset(asset)
+    row = PortfolioService(LotRepository(db_session)).aggregate_asset(asset, portfolio_base_currency="EUR")
     assert row.weighted_avg_buy_price_ex_fees == Decimal("13.33333333333333333333333333")

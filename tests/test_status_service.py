@@ -9,3 +9,6 @@ def test_status_service(db_session):
     status = StatusService(db_session).build()
     assert status["database_reachable"] is True
     assert status["asset_counts"][AssetMode.CASH.value] == 1
+    assert status["totals_complete"] is True
+    assert status["missing_fx_asset_count"] == 0
+    assert status["missing_quote_asset_count"] == 0

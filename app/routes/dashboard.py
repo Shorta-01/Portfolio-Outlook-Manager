@@ -13,9 +13,10 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request, db: Session = Depends(get_db_session)):
     service = DashboardService(db)
+    rows = service.owned_rows()
     return templates.TemplateResponse(
         "dashboard.html",
-        {"request": request, "rows": service.owned_rows(), "summary": service.summary_cards()},
+        {"request": request, "rows": rows, "summary": service.summary_cards(rows)},
     )
 
 

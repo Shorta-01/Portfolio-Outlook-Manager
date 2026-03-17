@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, String
+from sqlalchemy import Boolean, DateTime, Enum as SAEnum, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -37,6 +37,7 @@ class Asset(Base):
     asset_type: Mapped[AssetType] = mapped_column(SAEnum(AssetType))
     asset_mode: Mapped[AssetMode] = mapped_column(SAEnum(AssetMode))
     quote_currency: Mapped[str] = mapped_column(String(8))
+    term_deposit_rate: Mapped[float | None] = mapped_column(Numeric(10, 6), nullable=True)
     exchange: Mapped[str | None] = mapped_column(String(64), nullable=True)
     isin: Mapped[str | None] = mapped_column(String(32), nullable=True)
     provider_primary: Mapped[str | None] = mapped_column(String(64), nullable=True)

@@ -1,4 +1,5 @@
 from uuid import uuid4
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
@@ -40,12 +41,14 @@ class InstrumentService:
         if existing is not None:
             return existing, False
 
+        normalized_term_deposit_rate = self._normalize_term_deposit_rate(payload.asset_type, payload.term_deposit_rate)
         asset = Asset(
             symbol_internal=f"asset_{uuid4().hex[:12]}",
             display_name=payload.display_name.strip(),
             asset_type=payload.asset_type,
             asset_mode=payload.asset_mode,
             quote_currency=payload.quote_currency.upper(),
+            term_deposit_rate=normalized_term_deposit_rate,
             exchange=payload.exchange,
             isin=(payload.isin.strip().upper() if payload.isin else None),
             is_manual_asset=payload.is_manual_asset,
@@ -55,6 +58,11 @@ class InstrumentService:
         self.db.commit()
         self.db.refresh(asset)
         return asset, True
+
+    def _normalize_term_deposit_rate(self, asset_type: AssetType, rate: Decimal | None) -> Decimal | None:
+        if asset_type != AssetType.TERM_DEPOSIT or rate is None:
+            return rate
+        return (rate / Decimal("100")) if rate > Decimal("1") else rate
 
     def find_by_identity(self, payload: AssetCreate) -> Asset | None:
         identity_key = self.identity_service.key_for_create(payload)

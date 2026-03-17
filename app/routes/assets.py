@@ -24,6 +24,7 @@ def create_asset(
     asset_type: str = Form(...),
     asset_mode: str = Form(...),
     quote_currency: str = Form(...),
+    term_deposit_rate: str | None = Form(None),
     exchange: str | None = Form(None),
     isin: str | None = Form(None),
     db: Session = Depends(get_db_session),
@@ -35,6 +36,7 @@ def create_asset(
             asset_type=AssetType(asset_type),
             asset_mode=AssetMode(asset_mode),
             quote_currency=quote_currency,
+            term_deposit_rate=term_deposit_rate,
             exchange=exchange,
             isin=isin,
         )

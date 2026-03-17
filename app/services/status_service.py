@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.repositories.asset_repo import AssetRepository
 from app.repositories.polling_rule_repo import PollingRuleRepository
 from app.repositories.settings_repo import SettingsRepository
+from app.services.dashboard_service import DashboardService
 
 
 class StatusService:
@@ -21,6 +22,7 @@ class StatusService:
             return False
 
     def build(self) -> dict:
+        dashboard_summary = DashboardService(self.db).summary_cards()
         return {
             "app_status": "ok",
             "database_reachable": self.database_reachable(),
@@ -29,4 +31,7 @@ class StatusService:
             "polling_rule_count": self.polling_repo.count(),
             "scheduler_status": "placeholder",
             "provider_freshness": "placeholder",
+            "totals_complete": dashboard_summary.totals_complete,
+            "missing_fx_asset_count": dashboard_summary.missing_fx_asset_count,
+            "missing_quote_asset_count": dashboard_summary.missing_quote_asset_count,
         }
