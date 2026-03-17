@@ -14,7 +14,7 @@
 {% if is_cash %}<p>Amount {{asset.current_amount}} {{asset.quote_currency}} | Value now {{valuation.value_now_base_currency}}</p><p>Source {{valuation.source_label}} | Freshness {{valuation.freshness_status}}</p>{% endif %}
 {% if is_term_deposit %}<p>Principal {{asset.principal_amount}} | Annual rate {{asset.interest_rate_annual}} | Start {{asset.start_date}} | Maturity {{asset.maturity_date}}</p>
 <p>Accrued value now {{valuation.value_now_base_currency}} | Maturity value {{maturity_value}}</p><p>Source {{valuation.source_label}} | Freshness {{valuation.freshness_status}}</p>{% endif %}
-{% if is_watchlist %}<p>Outlook/Suggested action/Confidence/Last update/Freshness/Source/Reason/Risk note placeholders</p>{% endif %}
+{% if not is_cash and not is_term_deposit %}<h3>Forecast Decision Panel</h3><p>Short-term outlook: {{outlook.short_term_outlook if outlook else "unavailable"}} | Medium-term outlook: {{outlook.medium_term_outlook if outlook else "unavailable"}}</p><p>Suggested action: {{action.action_label if action else "unavailable"}} | Confidence: {{outlook.confidence if outlook else "unavailable"}} | Urgency: {{outlook.urgency if outlook else "unavailable"}}</p><p>Reason: {{outlook.reason_summary if outlook else "Outlook unavailable for this asset yet."}}</p><p>Risk note: {{outlook.risk_note if outlook else "—"}}</p><p>Key lower level: {{action.key_level_down if action and action.key_level_down is not none else "—"}} | Key upper level: {{action.key_level_up if action and action.key_level_up is not none else "—"}}</p><p>Invalidation note: {{action.invalidation_note if action else "—"}}</p>{% endif %}
 </div>
 {% include 'components/tabs.html' %}
 {% if is_owned %}{% include 'components/lot_table.html' %}{% endif %}
@@ -31,4 +31,6 @@
 {% else %}
 <p>No stored history yet.</p>
 {% endif %}
+<h3>Recent outlook history</h3>
+{% if recent_outlook_history %}<table><thead><tr><th>Time (UTC)</th><th>Short</th><th>Medium</th><th>Confidence</th><th>Urgency</th></tr></thead><tbody>{% for o in recent_outlook_history %}<tr><td>{{o.timestamp_utc}}</td><td>{{o.short_term_outlook}}</td><td>{{o.medium_term_outlook}}</td><td>{{o.confidence}}</td><td>{{o.urgency}}</td></tr>{% endfor %}</tbody></table>{% else %}<p>No outlook snapshots yet.</p>{% endif %}
 {% endblock %}

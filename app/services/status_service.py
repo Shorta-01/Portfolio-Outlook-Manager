@@ -6,6 +6,7 @@ from app.repositories.asset_repo import AssetRepository
 from app.repositories.market_quote_repo import MarketQuoteRepository
 from app.repositories.polling_rule_repo import PollingRuleRepository
 from app.repositories.settings_repo import SettingsRepository
+from app.repositories.outlook_snapshot_repo import OutlookSnapshotRepository
 from app.scheduler.engine import scheduler_running
 from app.services.scheduler_state import scheduler_state
 from app.services.dashboard_service import DashboardService
@@ -22,6 +23,7 @@ class StatusService:
         self.quote_repo = MarketQuoteRepository(db)
         self.settings_repo = SettingsRepository(db)
         self.dashboard_service = DashboardService(db)
+        self.outlook_repo = OutlookSnapshotRepository(db)
         self.valuation_service = ValuationService(LotRepository(db), MarketQuoteRepository(db), FXRateRepository(db))
 
     def database_reachable(self) -> bool:
@@ -74,4 +76,7 @@ class StatusService:
             "assets_without_history_count": sum(1 for asset in self.asset_repo.list_all() if not self.quote_repo.has_quote_for_asset(asset.id)),
             "quote_rows_count": self.quote_repo.count_rows(),
             "fx_rows_count": FXRateRepository(self.db).count_rows(),
+            "assets_with_outlook_count": sum(1 for asset in self.asset_repo.list_all() if self.outlook_repo.get_latest_by_asset(asset.id) is not None),
+            "assets_without_outlook_count": sum(1 for asset in self.asset_repo.list_all() if self.outlook_repo.get_latest_by_asset(asset.id) is None),
+            "last_successful_outlook_run_utc": scheduler_state.last_successful_outlook_run_utc,
         }

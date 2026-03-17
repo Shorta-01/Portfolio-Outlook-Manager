@@ -7,6 +7,7 @@ from app.repositories.lot_repo import LotRepository
 from app.repositories.market_quote_repo import MarketQuoteRepository
 from app.repositories.settings_repo import SettingsRepository
 from app.services.valuation_service import ValuationService
+from app.services.outlook_service import OutlookService
 
 
 class AssetDetailService:
@@ -16,6 +17,7 @@ class AssetDetailService:
         self.quote_repo = MarketQuoteRepository(db)
         self.settings_repo = SettingsRepository(db)
         self.valuation_service = ValuationService(self.lot_repo, MarketQuoteRepository(db), FXRateRepository(db))
+        self.outlook_service = OutlookService(db)
 
     def build(self, asset_id: int) -> dict:
         asset = self.asset_repo.get(asset_id)
@@ -39,6 +41,7 @@ class AssetDetailService:
         if asset.asset_type == AssetType.TERM_DEPOSIT or asset.asset_mode == AssetMode.TERM_DEPOSIT:
             maturity_value = self.valuation_service.maturity_value(asset)
 
+        outlook, action = self.outlook_service.latest_for_asset(asset.id)
         return {
             "asset": asset,
             "lots": lots,
@@ -51,4 +54,7 @@ class AssetDetailService:
             "is_cash": asset.asset_mode == AssetMode.CASH or asset.asset_type == AssetType.CASH,
             "is_term_deposit": asset.asset_mode == AssetMode.TERM_DEPOSIT or asset.asset_type == AssetType.TERM_DEPOSIT,
             "recent_quotes": self.quote_repo.recent_for_asset(asset.id, limit=15),
+            "outlook": outlook,
+            "action": action,
+            "recent_outlook_history": self.outlook_service.recent_history_for_asset(asset.id, limit=10),
         }

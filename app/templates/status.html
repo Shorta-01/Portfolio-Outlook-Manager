@@ -22,8 +22,14 @@
 <li>Assets without history count: {{status.assets_without_history_count}}</li>
 <li>Quote rows count: {{status.quote_rows_count}}</li>
 <li>FX rows count: {{status.fx_rows_count}}</li>
+<li>Assets with outlook count: {{status.assets_with_outlook_count}}</li>
+<li>Assets without outlook count: {{status.assets_without_outlook_count}}</li>
+<li>Last successful outlook run UTC: {{status.last_successful_outlook_run_utc or "—"}}</li>
 </ul>
 <form method="post" action="/admin/polling/run-once">
   <button type="submit">Run polling once</button>
+</form>
+<form method="post" action="/admin/outlook/run-once">
+  <button type="submit">Run outlook once</button>
 </form>
 {% endblock %}

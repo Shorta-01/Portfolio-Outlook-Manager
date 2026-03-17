@@ -7,6 +7,7 @@ class SchedulerState:
     running: bool = False
     last_successful_poll_utc: datetime | None = None
     last_successful_backfill_utc: datetime | None = None
+    last_successful_outlook_run_utc: datetime | None = None
 
 
 scheduler_state = SchedulerState()
