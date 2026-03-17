@@ -13,7 +13,7 @@
 {% if is_owned and aggregate %}
 <div class="card">
   <h3>Position</h3>
-  <p>Quantity: {{aggregate.total_quantity}}</p><p>Invested (incl fees): {{aggregate.total_invested_value_including_fees}}</p><p>Current value ({{base_currency}}): {{aggregate.value_now}}</p><p>P/L: {{aggregate.unrealized_pl_amount}} ({{aggregate.unrealized_pl_percent}}%)</p>
+  <p>Quantity: {{aggregate.total_quantity}}</p><p>Invested (incl fees): {{aggregate.total_invested_value_including_fees}}</p><p>Current value ({{base_currency}}) <span class="help-tip" data-tooltip="Estimated value now converted to your base currency.">ⓘ</span>: {{aggregate.value_now}}</p><p>P/L <span class="help-tip" data-tooltip="Unrealized profit/loss based on your lots and latest quote.">ⓘ</span>: {{aggregate.unrealized_pl_amount}} ({{aggregate.unrealized_pl_percent}}%)</p>
   {% if aggregate.valuation_warning %}<p class="warning">{{aggregate.valuation_warning}}</p>{% endif %}
 </div>
 {% endif %}
@@ -21,9 +21,16 @@
 {% if valuation %}
 <div class="card">
   <h3>Valuation snapshot</h3>
-  <p>Current value ({{base_currency}}): {{valuation.value_now_base_currency}}</p>
-  {% if maturity_value %}<p>Maturity value estimate: {{maturity_value}}</p>{% endif %}
+  <p>Current value ({{base_currency}}) <span class="help-tip" data-tooltip="Estimated value now converted to your base currency.">ⓘ</span>: {{valuation.value_now_base_currency}}</p>
+  {% if maturity_value %}<p>Maturity value estimate <span class="help-tip" data-tooltip="Estimated value at maturity for term deposits.">ⓘ</span>: {{maturity_value}}</p>{% endif %}
   {% if valuation.valuation_warning %}<p class="warning">{{valuation.valuation_warning}}</p>{% endif %}
+</div>
+{% endif %}
+
+{% if valuation %}
+<div class="card">
+  <h3>Outlook context</h3>
+  <p><span data-tooltip="Short-term direction for the near horizon.">Short-term outlook</span> · <span data-tooltip="Medium-term direction over a wider horizon.">Medium-term outlook</span> · <span data-tooltip="Recommended action based on latest outlook.">Suggested action</span> · <span data-tooltip="How strongly the system trusts the current outlook.">Confidence</span> · <span data-tooltip="How quickly this asset may need attention.">Urgency</span> · <span data-tooltip="Main reason behind the latest outlook.">Reason</span> · <span data-tooltip="Key risk that could invalidate the outlook.">Risk note</span> · <span data-tooltip="Reference support/resistance levels if available.">Key levels</span>.</p>
 </div>
 {% endif %}
 
@@ -52,9 +59,9 @@
 <table><thead><tr><th>Time (UTC)</th><th>Price</th><th>Currency</th><th>Provider</th><th>Interval</th></tr></thead><tbody>{% for q in recent_quotes %}<tr><td>{{q.provider_timestamp_utc}}</td><td>{{q.price}}</td><td>{{q.quote_currency}}</td><td>{{q.provider_name}}</td><td>{{q.interval_type}}</td></tr>{% endfor %}</tbody></table>
 {% else %}<p>No quote history yet.</p>{% endif %}
 <h3>Recent outlook history</h3>
-{% if recent_outlook_history %}<table><thead><tr><th>Time (UTC)</th><th>Short</th><th>Medium</th><th>Confidence</th><th>Urgency</th></tr></thead><tbody>{% for o in recent_outlook_history %}<tr><td>{{o.timestamp_utc}}</td><td>{{o.short_term_outlook}}</td><td>{{o.medium_term_outlook}}</td><td>{{o.confidence}}</td><td>{{o.urgency}}</td></tr>{% endfor %}</tbody></table>{% else %}<p>No outlook yet.</p>{% endif %}
+{% if recent_outlook_history %}<table><thead><tr><th>Time (UTC)</th><th data-tooltip="Short-term direction for the next trading window.">Short</th><th data-tooltip="Medium-term direction over the broader horizon.">Medium</th><th data-tooltip="How strongly the system trusts this outlook.">Confidence</th><th data-tooltip="How quickly this asset may need attention.">Urgency</th></tr></thead><tbody>{% for o in recent_outlook_history %}<tr><td>{{o.timestamp_utc}}</td><td>{{o.short_term_outlook}}</td><td>{{o.medium_term_outlook}}</td><td>{{o.confidence}}</td><td>{{o.urgency}}</td></tr>{% endfor %}</tbody></table>{% else %}<p>No outlook yet.</p>{% endif %}
 <h3>Outlook evaluation scorecard</h3>
-<p>Short-term hit rate: {{ '%.2f'|format((outlook_scorecard.accuracy.short.hit_rate or 0) * 100) if outlook_scorecard.accuracy.short.hit_rate is not none else '—' }}% ({{ outlook_scorecard.accuracy.short.hits }}/{{ outlook_scorecard.accuracy.short.total }})</p>
-<p>Medium-term hit rate: {{ '%.2f'|format((outlook_scorecard.accuracy.medium.hit_rate or 0) * 100) if outlook_scorecard.accuracy.medium.hit_rate is not none else '—' }}% ({{ outlook_scorecard.accuracy.medium.hits }}/{{ outlook_scorecard.accuracy.medium.total }})</p>
+<p data-tooltip="Share of short-horizon outlooks that were correct after evaluation.">Short-term hit rate: {{ '%.2f'|format((outlook_scorecard.accuracy.short.hit_rate or 0) * 100) if outlook_scorecard.accuracy.short.hit_rate is not none else '—' }}% ({{ outlook_scorecard.accuracy.short.hits }}/{{ outlook_scorecard.accuracy.short.total }})</p>
+<p data-tooltip="Share of medium-horizon outlooks that were correct after evaluation.">Medium-term hit rate: {{ '%.2f'|format((outlook_scorecard.accuracy.medium.hit_rate or 0) * 100) if outlook_scorecard.accuracy.medium.hit_rate is not none else '—' }}% ({{ outlook_scorecard.accuracy.medium.hits }}/{{ outlook_scorecard.accuracy.medium.total }})</p>
 {% if outlook_scorecard.recent %}<table><thead><tr><th>Evaluated</th><th>Horizon</th><th>Predicted</th><th>Realized</th><th>Return</th><th>Verdict</th></tr></thead><tbody>{% for ev in outlook_scorecard.recent %}<tr><td>{{ ev.evaluation_timestamp_utc }}</td><td>{{ ev.horizon_type }}</td><td>{{ ev.predicted_label }}</td><td>{{ ev.realized_direction }}</td><td>{{ ev.realized_return }}</td><td>{% if ev.was_correct is none %}neutral{% elif ev.was_correct %}correct{% else %}incorrect{% endif %}</td></tr>{% endfor %}</tbody></table>{% else %}<p>No evaluations yet.</p>{% endif %}
 {% endblock %}

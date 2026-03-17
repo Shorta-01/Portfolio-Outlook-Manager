@@ -6,23 +6,23 @@
   <div class="card">
     <h3>Runtime</h3>
     <p>App: {{status.app_status}}</p>
-    <p>Scheduler: {{status.scheduler_status}}</p>
-    <p>Last poll: {{status.last_successful_poll_utc or '—'}}</p>
-    <p>Last backfill: {{status.last_successful_backfill_utc or '—'}}</p>
-    <p>Last outlook: {{status.last_successful_outlook_run_utc or '—'}}</p>
-    <p>Last evaluation: {{status.last_successful_outlook_evaluation_run_utc or '—'}}</p>
-    <p>Last alerts: {{status.last_successful_alert_run_utc or '—'}}</p>
-    <p>Last cleanup: {{status.last_successful_cleanup_run_utc or '—'}}</p>
+    <p><span data-tooltip="Shows whether background jobs are currently running.">Scheduler</span>: {{status.scheduler_status}}</p>
+    <p><span data-tooltip="Last successful market quote polling run.">Last poll</span>: {{status.last_successful_poll_utc or '—'}}</p>
+    <p><span data-tooltip="Last successful historical data backfill run.">Last backfill</span>: {{status.last_successful_backfill_utc or '—'}}</p>
+    <p><span data-tooltip="Last successful outlook generation run.">Last outlook</span>: {{status.last_successful_outlook_run_utc or '—'}}</p>
+    <p><span data-tooltip="Last run that evaluated past outlook quality.">Last evaluation</span>: {{status.last_successful_outlook_evaluation_run_utc or '—'}}</p>
+    <p><span data-tooltip="Last successful alert generation run.">Last alerts</span>: {{status.last_successful_alert_run_utc or '—'}}</p>
+    <p><span data-tooltip="Last successful cleanup of old operational data.">Last cleanup</span>: {{status.last_successful_cleanup_run_utc or '—'}}</p>
     <p>Latest backup: {{status.latest_backup_timestamp_utc or '—'}}</p>
   </div>
   <div class="card">
     <h3>Data coverage</h3>
     <p>Assets with history: {{status.assets_with_history_count}}</p>
     <p>Assets without history: {{status.assets_without_history_count}}</p>
-    <p>Quote rows: {{status.quote_rows_count}}</p>
-    <p>FX rows: {{status.fx_rows_count}}</p>
-    <p>Stale/unknown assets: {{status.stale_assets_count}}</p>
-    <p>Incomplete valuations: {{status.incomplete_valuation_count}}</p>
+    <p><span data-tooltip="Total stored market quote rows.">Quote rows</span>: {{status.quote_rows_count}}</p>
+    <p><span data-tooltip="Total stored FX conversion rows.">FX rows</span>: {{status.fx_rows_count}}</p>
+    <p><span data-tooltip="Assets with delayed or unknown quote freshness.">Stale/unknown assets</span>: {{status.stale_assets_count}}</p>
+    <p><span data-tooltip="Assets missing quote or FX data for full valuation.">Incomplete valuations</span>: {{status.incomplete_valuation_count}}</p>
     <p>Missing quote: {{status.assets_missing_quote}}</p>
     <p>Missing FX: {{status.assets_missing_fx}}</p>
     <p>Archived assets: {{status.archived_asset_count}}</p>
@@ -34,8 +34,8 @@
     <p>Enabled: {{status.alerts_enabled}}</p>
     <p>Rules: {{status.total_alert_rules}}</p>
     <p>Events: {{status.total_alert_events}}</p>
-    <p>Unread: {{status.unread_alert_count}}</p>
-    <p>Active: {{status.active_alert_count}}</p>
+    <p><span data-tooltip="Unread alerts still needing review.">Unread</span>: {{status.unread_alert_count}}</p>
+    <p><span data-tooltip="Active alerts that are not resolved yet.">Active</span>: {{status.active_alert_count}}</p>
   </div>
   <div class="card">
     <h3>Outlook quality</h3>

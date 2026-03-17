@@ -2,14 +2,14 @@
 {% block content %}
 {% if message %}<p class="{{ message_level or 'notice' }}">{{message}}</p>{% endif %}
 {% include 'components/summary_cards.html' %}
-{% if rows|length == 0 %}
-<section class="card">
-  <h3>Getting started</h3>
-  <ol>
-    <li>Initialize DB and configure settings.</li><li>Import CSV or add assets.</li><li>Add lots for owned assets.</li><li>Backfill history.</li><li>Run polling and outlook.</li><li>Run evaluation and review alerts/status.</li>
-  </ol>
+{% if rows|length == 0 and filter_options.asset_types|length == 0 %}
+<section class="card empty-state">
+  <h3>Your portfolio is empty</h3>
+  <p>Add your first asset to start valuation and outlook tracking.</p>
+  <p><a href="/assets/new">Add Asset</a> · <a href="/imports/csv">Import CSV</a></p>
+  <p><small>Getting started: Add Asset → Add Lot or Import CSV → Backfill history later.</small></p>
 </section>
-{% endif %}
+{% else %}
 <section class="card">
   <form method="get" class="filters">
     <input name="q" placeholder="Search name / ISIN / symbol" value="{{query.q}}" />
@@ -17,11 +17,12 @@
     <select name="currency"><option value="">All currencies</option>{% for v in filter_options.currencies %}<option value="{{v}}" {% if query.currency==v %}selected{% endif %}>{{v}}</option>{% endfor %}</select>
     <select name="outlook"><option value="">All outlooks</option>{% for v in filter_options.outlooks %}<option value="{{v}}" {% if query.outlook==v %}selected{% endif %}>{{v}}</option>{% endfor %}</select>
     <select name="action"><option value="">All actions</option>{% for v in filter_options.actions %}<option value="{{v}}" {% if query.action==v %}selected{% endif %}>{{v}}</option>{% endfor %}</select>
-    <label><input type="checkbox" name="incomplete_only" value="1" {% if query.incomplete_only=='1' %}checked{% endif %}/> Incomplete valuation only</label>
+    <label><input type="checkbox" name="incomplete_only" value="1" {% if query.incomplete_only=='1' %}checked{% endif %}/> Incomplete valuation only <span class="help-tip" data-tooltip="Show only assets missing fresh quote or FX data.">ⓘ</span></label>
     <select name="sort"><option value="asset_name">Name</option><option value="asset_type">Type</option><option value="value_now">Value now</option><option value="pl_amount">P/L €</option><option value="pl_percent">P/L %</option><option value="confidence">Confidence</option><option value="urgency">Urgency</option><option value="last_update">Last update</option></select>
     <select name="dir"><option value="asc" {% if query.dir=='asc' %}selected{% endif %}>Asc</option><option value="desc" {% if query.dir=='desc' %}selected{% endif %}>Desc</option></select>
     <button type="submit">Apply</button>
   </form>
 </section>
+{% endif %}
 {% include 'components/portfolio_grid.html' %}
 {% endblock %}

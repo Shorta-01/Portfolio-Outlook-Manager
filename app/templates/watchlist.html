@@ -2,6 +2,14 @@
 {% block content %}
 <h2>Watchlist</h2>
 {% if message %}<p class="{{ message_level or 'notice' }}">{{message}}</p>{% endif %}
+{% if rows|length == 0 and filter_options.asset_types|length == 0 %}
+<section class="card empty-state">
+  <h3>Your watchlist is empty</h3>
+  <p>Add assets to track ideas before opening positions.</p>
+  <p><a href="/assets/new">Add Asset</a> · <a href="/imports/csv">Import CSV</a></p>
+  <p><small>Track candidates here while you monitor outlook, action, and freshness.</small></p>
+</section>
+{% else %}
 <section class="card">
   <form method="get" class="filters">
     <input name="q" placeholder="Search name / ISIN / symbol" value="{{query.q}}" />
@@ -14,5 +22,6 @@
     <button type="submit">Apply</button>
   </form>
 </section>
+{% endif %}
 {% include 'components/watchlist_grid.html' %}
 {% endblock %}

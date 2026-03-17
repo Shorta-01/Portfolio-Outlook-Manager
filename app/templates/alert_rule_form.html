@@ -2,16 +2,16 @@
 {% block content %}
 <h2>{% if rule %}Edit{% else %}New{% endif %} Alert Rule</h2>
 <form method="post" action="{% if rule %}/alerts/rules/{{rule.id}}{% else %}/alerts/rules{% endif %}" class="card">
-  <label>Rule type <input name="rule_type" value="{{rule.rule_type if rule else ''}}" required></label>
-  <label>Severity <input name="severity" value="{{rule.severity if rule else 'medium'}}"></label>
+  <label>Rule type <span class="help-tip" data-tooltip="Trigger condition, for example price_up_pct or quote_stale.">ⓘ</span> <input name="rule_type" value="{{rule.rule_type if rule else ''}}" required></label>
+  <label>Severity <span class="help-tip" data-tooltip="Priority level used when this rule fires.">ⓘ</span> <input name="severity" value="{{rule.severity if rule else 'medium'}}"></label>
   <label>Enabled <input type="checkbox" name="enabled" value="1" {% if not rule or rule.enabled %}checked{% endif %}></label>
   <label>Asset
     <select name="asset_id"><option value="">Global</option>{% for asset in assets %}<option value="{{asset.id}}" {% if rule and rule.asset_id==asset.id %}selected{% endif %}>{{asset.display_name}}</option>{% endfor %}</select>
   </label>
   <label>Asset mode scope <input name="asset_mode_scope" value="{{rule.asset_mode_scope if rule else ''}}"></label>
   <label>Asset type scope <input name="asset_type_scope" value="{{rule.asset_type_scope if rule else ''}}"></label>
-  <label>Threshold <input name="threshold_value" value="{{rule.threshold_value if rule else ''}}"></label>
-  <label>Cooldown minutes <input name="cooldown_minutes" type="number" value="{{rule.cooldown_minutes if rule else 60}}"></label>
+  <label>Threshold <span class="help-tip" data-tooltip="Trigger value used by threshold-based rules.">ⓘ</span> <input name="threshold_value" value="{{rule.threshold_value if rule else ''}}"></label>
+  <label>Cooldown minutes <span class="help-tip" data-tooltip="Minimum wait before the same rule can create a new alert.">ⓘ</span> <input name="cooldown_minutes" type="number" value="{{rule.cooldown_minutes if rule else 60}}"></label>
   <label>Config JSON <input name="config_json" value="{{rule.config_json if rule else ''}}"></label>
   <button type="submit">Save</button>
 </form>

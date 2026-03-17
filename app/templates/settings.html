@@ -2,12 +2,12 @@
 {% block content %}
 <h2>Settings</h2>
 <form method="post" action="/settings" class="card">
-<input name="portfolio_base_currency" value="{{settings.portfolio_base_currency if settings else 'EUR'}}" />
-<input name="default_poll_every_minutes" type="number" min="1" value="{{settings.default_poll_every_minutes if settings else 5}}" />
+<label>Portfolio base currency <span class="help-tip" data-tooltip="All portfolio totals are converted into this currency.">ⓘ</span><input name="portfolio_base_currency" value="{{settings.portfolio_base_currency if settings else 'EUR'}}" /></label>
+<label>Default poll every minutes <span class="help-tip" data-tooltip="Default interval for automatic quote polling.">ⓘ</span><input name="default_poll_every_minutes" type="number" min="1" value="{{settings.default_poll_every_minutes if settings else 5}}" /></label>
 <label><input name="use_market_hours_default" type="checkbox" {% if settings and settings.use_market_hours_default %}checked{% endif %}/> Market hours default</label>
 <label><input name="alerts_enabled_global" type="checkbox" {% if not settings or settings.alerts_enabled_global %}checked{% endif %}/> Alerts enabled globally</label>
-<label>Default alert cooldown minutes <input name="default_alert_cooldown_minutes" type="number" min="1" value="{{settings.default_alert_cooldown_minutes if settings else 60}}" /></label>
-<label>Default maturity soon days <input name="default_maturity_soon_days" type="number" min="1" value="{{settings.default_maturity_soon_days if settings else 30}}" /></label>
+<label>Default alert cooldown minutes <span class="help-tip" data-tooltip="Fallback cooldown for new alert rules.">ⓘ</span> <input name="default_alert_cooldown_minutes" type="number" min="1" value="{{settings.default_alert_cooldown_minutes if settings else 60}}" /></label>
+<label>Default maturity soon days <span class="help-tip" data-tooltip="Days before maturity when term deposits can be flagged as soon.">ⓘ</span> <input name="default_maturity_soon_days" type="number" min="1" value="{{settings.default_maturity_soon_days if settings else 30}}" /></label>
 <button type="submit">Save</button>
 </form>
 <h3>Polling rules</h3>
