@@ -2,6 +2,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.models.asset import AssetMode
+from app.repositories.alert_event_repo import AlertEventRepository
+from app.repositories.alert_rule_repo import AlertRuleRepository
 from app.repositories.asset_repo import AssetRepository
 from app.repositories.fx_rate_repo import FXRateRepository
 from app.repositories.lot_repo import LotRepository
@@ -20,6 +22,8 @@ class StatusService:
     def __init__(self, db: Session):
         self.db = db
         self.asset_repo = AssetRepository(db)
+        self.alert_rule_repo = AlertRuleRepository(db)
+        self.alert_event_repo = AlertEventRepository(db)
         self.polling_repo = PollingRuleRepository(db)
         self.quote_repo = MarketQuoteRepository(db)
         self.settings_repo = SettingsRepository(db)
@@ -90,4 +94,10 @@ class StatusService:
             "last_successful_outlook_evaluation_run_utc": scheduler_state.last_successful_outlook_evaluation_run_utc,
             "evaluated_outlook_count": scheduler_state.evaluated_outlook_count,
             "unevaluated_outlook_count": scheduler_state.unevaluated_outlook_count,
+            "alerts_enabled": settings.alerts_enabled_global if settings else True,
+            "total_alert_rules": self.alert_rule_repo.count(),
+            "total_alert_events": self.alert_event_repo.count(),
+            "unread_alert_count": self.alert_event_repo.unread_count(),
+            "active_alert_count": self.alert_event_repo.active_count(),
+            "last_successful_alert_run_utc": scheduler_state.last_successful_alert_run_utc,
         }

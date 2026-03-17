@@ -11,6 +11,7 @@ class SchedulerState:
     last_successful_outlook_evaluation_run_utc: datetime | None = None
     evaluated_outlook_count: int = 0
     unevaluated_outlook_count: int = 0
+    last_successful_alert_run_utc: datetime | None = None
 
 
 scheduler_state = SchedulerState()

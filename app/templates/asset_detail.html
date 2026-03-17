@@ -27,6 +27,9 @@
   {% endif %}
 </div>
 {% include 'components/tabs.html' %}
+
+<h3>Recent alerts</h3>
+{% if recent_alerts %}<ul>{% for a in recent_alerts %}<li>{{a.timestamp_utc}} · {{a.severity}} · {{a.title}} ({{"active" if a.is_active else "resolved"}})</li>{% endfor %}</ul>{% else %}<p>No alerts yet.</p>{% endif %}
 {% if is_owned %}{% include 'components/lot_table.html' %}{% endif %}
 <h3>Recent stored history</h3>
 {% if recent_quotes %}

@@ -4,7 +4,7 @@
 {% if message %}<p class="notice">{{message}}</p>{% endif %}
 <div class="cards">
   <div class="card"><h3>Scheduler</h3><p>State: {{status.scheduler_status}}</p><p>Last poll: {{status.last_successful_poll_utc or '—'}}</p><p>Last backfill: {{status.last_successful_backfill_utc or '—'}}</p><p>Last outlook: {{status.last_successful_outlook_run_utc or '—'}}</p><p>Last evaluation: {{status.last_successful_outlook_evaluation_run_utc or '—'}}</p></div>
-  <div class="card"><h3>Data coverage</h3><p>Quote rows: {{status.quote_rows_count}}</p><p>FX rows: {{status.fx_rows_count}}</p><p>Assets without history: {{status.assets_without_history_count}}</p><p>Totals complete: {{status.totals_complete}}</p></div>
+  <div class="card"><h3>Data coverage</h3><p>Quote rows: {{status.quote_rows_count}}</p><p>FX rows: {{status.fx_rows_count}}</p><p>Assets without history: {{status.assets_without_history_count}}</p><p>Totals complete: {{status.totals_complete}}</p></div><div class="card"><h3>Alerts</h3><p>Enabled: {{status.alerts_enabled}}</p><p>Rules: {{status.total_alert_rules}}</p><p>Events: {{status.total_alert_events}}</p><p>Unread: {{status.unread_alert_count}}</p><p>Active: {{status.active_alert_count}}</p><p>Last run: {{status.last_successful_alert_run_utc or "—"}}</p></div>
 </div>
 <ul>
 <li>Assets with latest quote: {{status.assets_with_latest_quote}}</li>
@@ -16,6 +16,7 @@
 <form method="post" action="/admin/polling/run-once"><button type="submit">Run polling once</button></form>
 <form method="post" action="/admin/outlook/run-once"><button type="submit">Run outlook once</button></form>
 <form method="post" action="/admin/outlook/evaluate-run-once"><button type="submit">Run outlook evaluation once</button></form>
+<form method="post" action="/admin/alerts/run-once"><button type="submit">Run alerts once</button></form>
 <form method="post" action="/exports/backup-db"><button type="submit">Create SQLite backup copy</button></form>
 <p><a href="/exports/portfolio.csv">Portfolio CSV</a> · <a href="/exports/watchlist.csv">Watchlist CSV</a> · <a href="/exports/portfolio-lots.csv">Lots CSV</a></p>
 {% endblock %}

@@ -16,5 +16,8 @@ class AppSetting(Base):
     backfill_daily_years_default: Mapped[int] = mapped_column(Integer, default=5)
     backfill_intraday_days_default: Mapped[int] = mapped_column(Integer, default=30)
     ui_theme_preference: Mapped[str] = mapped_column(String(32), default="dark")
+    alerts_enabled_global: Mapped[bool] = mapped_column(Boolean, default=True)
+    default_alert_cooldown_minutes: Mapped[int] = mapped_column(Integer, default=60)
+    default_maturity_soon_days: Mapped[int] = mapped_column(Integer, default=30)
     created_at_utc: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at_utc: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.models.asset import AssetMode, AssetType
+from app.repositories.alert_event_repo import AlertEventRepository
 from app.repositories.asset_repo import AssetRepository
 from app.repositories.fx_rate_repo import FXRateRepository
 from app.repositories.lot_repo import LotRepository
@@ -17,6 +18,7 @@ class AssetDetailService:
         self.lot_repo = LotRepository(db)
         self.quote_repo = MarketQuoteRepository(db)
         self.settings_repo = SettingsRepository(db)
+        self.alert_event_repo = AlertEventRepository(db)
         self.valuation_service = ValuationService(self.lot_repo, MarketQuoteRepository(db), FXRateRepository(db))
         self.outlook_service = OutlookService(db)
         self.outlook_evaluation_service = OutlookEvaluationService(db)
@@ -60,4 +62,5 @@ class AssetDetailService:
             "action": action,
             "recent_outlook_history": self.outlook_service.recent_history_for_asset(asset.id, limit=10),
             "outlook_scorecard": self.outlook_evaluation_service.scorecard_for_asset(asset.id),
+            "recent_alerts": self.alert_event_repo.list_filtered(asset_id=asset.id, limit=10),
         }
