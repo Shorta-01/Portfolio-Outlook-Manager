@@ -12,6 +12,8 @@ def test_asset_detail_returns_lots(db_session):
     model = AssetDetailService(db_session).build(asset.id)
     assert model["is_owned"] is True
     assert len(model["lots"]) == 1
+    assert model["aggregate"].weighted_avg_buy_price_ex_fees == 10
+    assert model["aggregate"].total_invested_value_including_fees == 10
 
 import pytest
 from pydantic import ValidationError

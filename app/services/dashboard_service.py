@@ -22,5 +22,5 @@ class DashboardService:
         return assets
 
     def summary_cards(self) -> SummaryCards:
-        total_invested = sum((row.total_invested_value for row in self.owned_rows()), Decimal("0"))
+        total_invested = sum((row.total_invested_value_including_fees for row in self.owned_rows()), Decimal("0"))
         return SummaryCards(total_invested=total_invested)

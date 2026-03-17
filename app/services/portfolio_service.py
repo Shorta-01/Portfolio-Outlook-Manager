@@ -11,15 +11,21 @@ class PortfolioService:
 
     def aggregate_asset(self, asset: Asset) -> OwnedAssetRow:
         lots = self.lot_repo.list_for_asset(asset.id)
-        total_qty = sum((lot.quantity for lot in lots), Decimal("0"))
-        total_invested = sum((lot.quantity * lot.buy_price + lot.fees for lot in lots), Decimal("0"))
-        avg_price = (total_invested / total_qty) if total_qty > 0 else Decimal("0")
+        total_quantity = sum((lot.quantity for lot in lots), Decimal("0"))
+        total_fees = sum((lot.fees for lot in lots), Decimal("0"))
+        total_buy_value_ex_fees = sum((lot.quantity * lot.buy_price for lot in lots), Decimal("0"))
+        total_invested_value_including_fees = total_buy_value_ex_fees + total_fees
+        weighted_avg_buy_price_ex_fees = (total_buy_value_ex_fees / total_quantity) if total_quantity > 0 else Decimal("0")
+        cost_basis_per_unit_including_fees = (total_invested_value_including_fees / total_quantity) if total_quantity > 0 else Decimal("0")
+
         return OwnedAssetRow(
             asset_id=asset.id,
             asset_name=asset.display_name,
             asset_type=asset.asset_type.value,
-            quantity=total_qty,
-            weighted_avg_buy_price=avg_price,
-            total_invested_value=total_invested,
+            total_quantity=total_quantity,
+            weighted_avg_buy_price_ex_fees=weighted_avg_buy_price_ex_fees,
+            total_fees=total_fees,
+            total_invested_value_including_fees=total_invested_value_including_fees,
+            cost_basis_per_unit_including_fees=cost_basis_per_unit_including_fees,
             lot_count=len(lots),
         )

@@ -8,5 +8,12 @@
 <input type="file" name="file" required />
 <button type="submit">Import</button>
 </form>
-{% if result %}<p>Imported: {{result.imported_count}}</p>{% for err in result.failed_rows %}<p>Row {{err.row_number}}: {{err.message}}</p>{% endfor %}{% endif %}
+{% if result %}
+<p>Assets created: {{result.assets_created}}</p>
+<p>Assets reused: {{result.assets_reused}}</p>
+<p>Lots created: {{result.lots_created}}</p>
+<p>Duplicates skipped: {{result.duplicates_skipped}}</p>
+<p>Failed rows: {{result.failed_rows|length}}</p>
+{% for err in result.failed_rows %}<p>Row {{err.row_number}}: {{err.message}}</p>{% endfor %}
+{% endif %}
 {% endblock %}

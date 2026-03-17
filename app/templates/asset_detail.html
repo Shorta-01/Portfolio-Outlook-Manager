@@ -3,8 +3,8 @@
 <h2>{{asset.display_name}}</h2>
 <div class="card"><p>{{asset.asset_type.value}} / {{asset.asset_mode.value}} / {{asset.quote_currency}}</p>
 <p>ISIN: {{asset.isin or '—'}}</p>
-{% if is_owned %}<p>Qty {{aggregate.quantity}} | Avg {{aggregate.weighted_avg_buy_price}} | Value at buy {{aggregate.total_invested_value}}</p>{% endif %}
-<p>Forecast/action/confidence/freshness/source placeholders</p></div>
+{% if is_owned %}<p>Quantity {{aggregate.total_quantity}} | Average buy price {{aggregate.weighted_avg_buy_price_ex_fees}} | Value at buy {{aggregate.total_invested_value_including_fees}}</p>{% endif %}
+<p>Outlook/Suggested action/Confidence/Last update/Freshness/Source/Reason/Risk note placeholders</p></div>
 {% include 'components/tabs.html' %}
 {% if is_owned %}{% include 'components/lot_table.html' %}{% endif %}
 {% endblock %}

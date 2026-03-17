@@ -16,6 +16,9 @@ class AssetRepository:
     def get(self, asset_id: int) -> Asset | None:
         return self.db.get(Asset, asset_id)
 
+    def list_all(self) -> list[Asset]:
+        return list(self.db.execute(select(Asset)).scalars().all())
+
     def find_by_name_mode(self, display_name: str, mode: AssetMode) -> Asset | None:
         stmt = select(Asset).where(Asset.display_name == display_name, Asset.asset_mode == mode)
         return self.db.execute(stmt).scalar_one_or_none()
