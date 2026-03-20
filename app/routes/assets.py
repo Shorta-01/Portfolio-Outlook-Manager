@@ -69,6 +69,8 @@ def asset_detail(asset_id: int, request: Request, db: Session = Depends(get_db_s
             **model,
             "message": request.query_params.get("message"),
             "message_level": request.query_params.get("message_level", "notice"),
+            "backfill_outcome": request.query_params.get("backfill_outcome"),
+            "backfill_rows": request.query_params.get("backfill_rows"),
         },
     )
 
@@ -143,12 +145,18 @@ def delete_asset(asset_id: int, confirm: str = Form(""), db: Session = Depends(g
 
 @router.post("/{asset_id}/backfill")
 def backfill_asset(asset_id: int, db: Session = Depends(get_db_session)):
-    try:
-        HistoryService(db).backfill_asset_by_id(asset_id)
-        message = "History backfill started successfully."
-    except Exception:
-        message = "Backfill failed. Check provider settings and symbol resolution."
-    return RedirectResponse(url=f"/assets/{asset_id}?message={message}", status_code=303)
+    result = HistoryService(db).backfill_asset_by_id(asset_id)
+    message = result.get("user_message", "Backfill finished.")
+    message_level = "notice" if result.get("success") else "warning"
+    return RedirectResponse(
+        url=(
+            f"/assets/{asset_id}?message={quote_plus(message)}"
+            f"&message_level={message_level}"
+            f"&backfill_outcome={quote_plus(result.get('outcome', 'unknown'))}"
+            f"&backfill_rows={result.get('rows_inserted_quotes', 0)}"
+        ),
+        status_code=303,
+    )
 
 
 @router.post("/{asset_id}/promote")

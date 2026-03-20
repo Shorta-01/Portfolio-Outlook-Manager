@@ -3,6 +3,16 @@
 <h2>{{asset.display_name}} ({{asset.asset_type.value}})</h2>
 {% if message %}<p class="{{ message_level or 'notice' }}">{{message}}</p>{% endif %}
 
+{% if backfill_outcome or message %}
+<div class="card">
+  <h3>Backfill status</h3>
+  {% if backfill_outcome %}<p>Last backfill outcome: {{ backfill_outcome }}</p>{% endif %}
+  {% if backfill_rows is not none %}<p>Last backfill quote rows inserted: {{ backfill_rows }}</p>{% endif %}
+  {% if not recent_quotes %}<p class="warning">Asset currently has no quote history.</p>{% endif %}
+  {% if asset.asset_type.value in ['fund'] and asset.isin %}<p>Fund ISIN resolution candidate: {{ asset.isin }}</p>{% endif %}
+</div>
+{% endif %}
+
 <div class="card">
   <a href="/assets/{{asset.id}}/edit">Edit asset</a>
   {% if is_owned %} · <a href="/lots/new?asset_id={{asset.id}}">Add lot</a>{% endif %}
